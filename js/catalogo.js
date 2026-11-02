@@ -284,12 +284,17 @@
     const fases = Object.keys(conf.fases);
     const all = (DATA.v2c._accesorios || []), acc = conf.accesorios ? all.filter(a => conf.accesorios.includes(a.nombre)) : all;
     cur.cfg = { fase: fases[0], salida: 0, extras: new Set(), acc: new Set() };
+    // Extras que dependen del cable elegido (precios por salida) o de otro extra (requiere)
+    const xPrice = (F, x) => x.precios ? (x.precios[cur.cfg.salida] ?? null) : x.precio;
+    const avail = (F, i) => { const x = F.extras[i]; return !x.precios || cur.cfg.salida in x.precios; };
+    const reqOk = (F, x) => !x.requiere || [...cur.cfg.extras].some(j => F.extras[j].nombre === x.requiere);
+    const prune = () => { const F = conf.fases[cur.cfg.fase]; let ch = true; while (ch) { ch = false; [...cur.cfg.extras].forEach(i => { if (!avail(F, i) || !reqOk(F, F.extras[i])) { cur.cfg.extras.delete(i); ch = true; } }); } };
     const draw = () => {
       const F = conf.fases[cur.cfg.fase];
       $("#pd-opts").innerHTML = `
         <div class="opt-group"><span class="lbl">Tipo de red y potencia <span class="hint">(precios con IVA)</span></span><div class="opts">${fases.map(f => `<button type="button" class="opt" data-fase="${esc(f)}" aria-pressed="${f === cur.cfg.fase}">${esc(f)}<small>${conf.fases[f].base ? conIva(conf.fases[f].base) : "Consultar"}</small></button>`).join("")}</div></div>
         <div class="opt-group"><span class="lbl">Cable o base</span><div class="opts">${F.salidas.map((s, i) => `<button type="button" class="opt" data-sal="${i}" aria-pressed="${i === cur.cfg.salida}">${esc(s.nombre.replace("Socket (base)", "Base Tipo 2"))}<small>${s.delta === 0 ? "Incluido" : s.delta == null ? "Consultar" : (s.delta > 0 ? "+" : "") + conIva(s.delta)}</small></button>`).join("")}</div></div>
-        <div class="opt-group"><span class="lbl">Extras</span>${F.extras.map((x, i) => `<label class="xrow"><input type="checkbox" data-ext="${i}" ${cur.cfg.extras.has(i) ? "checked" : ""}><span>${esc(x.nombre)}</span><span class="vp">${x.precio != null ? "+" + conIva(x.precio) : "Consultar"}</span></label>`).join("")}</div>
+        ${F.extras.some((x, i) => avail(F, i)) ? `<div class="opt-group"><span class="lbl">Extras</span>${F.extras.map((x, i) => avail(F, i) ? `<label class="xrow"><input type="checkbox" data-ext="${i}" ${cur.cfg.extras.has(i) ? "checked" : ""} ${reqOk(F, x) ? "" : "disabled"}><span>${esc(x.nombre)}${x.nota ? `<small class="hint" style="display:block">${esc(x.nota)}</small>` : ""}</span><span class="vp">${xPrice(F, x) != null ? "+" + conIva(xPrice(F, x)) : "Consultar"}</span></label>` : "").join("")}</div>` : ""}
         ${acc.length ? `<details class="acc"><summary>Accesorios V2C (opcional)</summary><div class="xlist">${acc.map((a, i) => `<label class="xrow"><input type="checkbox" data-acc="${i}" ${cur.cfg.acc.has(i) ? "checked" : ""}><span>${esc(a.nombre)}</span><span class="vp">${a.precio != null ? "+" + conIva(a.precio) : "Consultar"}</span></label>`).join("")}</div></details>` : ""}`;
       calc();
     };
@@ -299,7 +304,7 @@
       let total = F.base, pend = F.base == null;
       if (sal.delta == null && cur.cfg.salida !== 0) pend = true; else total = (total || 0) + (sal.delta || 0);
       const parts = [cur.cfg.fase, sal.nombre];
-      cur.cfg.extras.forEach(i => { const x = F.extras[i]; parts.push(x.nombre); x.precio == null ? pend = true : total += x.precio; });
+      cur.cfg.extras.forEach(i => { const x = F.extras[i], pr = xPrice(F, x); parts.push(x.nombre); pr == null ? pend = true : total += pr; });
       cur.cfg.acc.forEach(i => { const a = acc[i]; parts.push(a.nombre); a.precio == null ? pend = true : total += a.precio; });
       const txt = total ? eur(total) + (pend ? " + opciones a consultar" : "") : "Consultar";
       $("#pd-total").textContent = total ? conIva(total) + (pend ? " + opciones a consultar" : "") : "Consultar"; $("#pd-total").classList.toggle("sm", pend);
@@ -309,11 +314,11 @@
     $("#pd-opts").onclick = e => {
       const f = e.target.closest("[data-fase]"), s = e.target.closest("[data-sal]");
       if (f) { cur.cfg.fase = f.dataset.fase; cur.cfg.salida = 0; cur.cfg.extras.clear(); draw(); }
-      if (s) { cur.cfg.salida = +s.dataset.sal; draw(); }
+      if (s) { cur.cfg.salida = +s.dataset.sal; prune(); draw(); }
     };
     $("#pd-opts").onchange = e => {
       const t = e.target;
-      if (t.dataset.ext != null) t.checked ? cur.cfg.extras.add(+t.dataset.ext) : cur.cfg.extras.delete(+t.dataset.ext);
+      if (t.dataset.ext != null) { t.checked ? cur.cfg.extras.add(+t.dataset.ext) : cur.cfg.extras.delete(+t.dataset.ext); prune(); draw(); return; }
       if (t.dataset.acc != null) t.checked ? cur.cfg.acc.add(+t.dataset.acc) : cur.cfg.acc.delete(+t.dataset.acc);
       calc();
     };
