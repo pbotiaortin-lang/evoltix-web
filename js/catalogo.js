@@ -287,7 +287,8 @@
     // Extras que dependen del cable elegido (precios por salida) o de otro extra (requiere)
     const xPrice = (F, x) => x.precios ? (x.precios[cur.cfg.salida] ?? null) : x.precio;
     const avail = (F, i) => { const x = F.extras[i]; return !x.precios || cur.cfg.salida in x.precios; };
-    const reqOk = (F, x) => !x.requiere || [...cur.cfg.extras].some(j => F.extras[j].nombre === x.requiere);
+    const has = (F, n) => [...cur.cfg.extras].some(j => F.extras[j].nombre === n);
+    const reqOk = (F, x) => (!x.requiere || has(F, x.requiere)) && (!x.excluye || !has(F, x.excluye));
     const prune = () => { const F = conf.fases[cur.cfg.fase]; let ch = true; while (ch) { ch = false; [...cur.cfg.extras].forEach(i => { if (!avail(F, i) || !reqOk(F, F.extras[i])) { cur.cfg.extras.delete(i); ch = true; } }); } };
     const draw = () => {
       const F = conf.fases[cur.cfg.fase];
