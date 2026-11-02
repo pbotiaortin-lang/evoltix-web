@@ -227,7 +227,7 @@
     const forM = isAcc(m) ? DATA.modelos.filter(x => x.compatibles.includes(m.id)) : [];
     $("#pd-content").innerHTML = `
       <div class="pd-media"><div class="pd-img" id="pd-img">${media(m)}</div>
-        ${m.ficha ? `<a class="pd-doc" href="docs/${esc(m.ficha)}" target="_blank" rel="noopener">${ICON.doc}<span><b>Ficha técnica del fabricante</b><small>PDF · ${esc(m.marca)}</small></span></a>` : ""}
+        ${m.ficha ? `<a class="pd-doc" href="${/^https?:/.test(m.ficha) ? esc(m.ficha) : "docs/" + esc(m.ficha)}" target="_blank" rel="noopener">${ICON.doc}<span><b>Ficha técnica del fabricante</b><small>PDF · ${esc(m.marca)}</small></span></a>` : ""}
       </div>
       <div class="pd-body">
         <div><div class="eyebrow">${esc(m.marca)} · ${esc(m.categoria)}</div><h2 id="pd-title" style="margin-top:8px">${esc(m.modelo)}</h2></div>
@@ -282,7 +282,7 @@
 
   function buildConfigurator(m, conf) {
     const fases = Object.keys(conf.fases);
-    const acc = (DATA.v2c._accesorios || []);
+    const all = (DATA.v2c._accesorios || []), acc = conf.accesorios ? all.filter(a => conf.accesorios.includes(a.nombre)) : all;
     cur.cfg = { fase: fases[0], salida: 0, extras: new Set(), acc: new Set() };
     const draw = () => {
       const F = conf.fases[cur.cfg.fase];
