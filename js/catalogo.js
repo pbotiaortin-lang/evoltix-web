@@ -278,6 +278,9 @@
     $("#pd-total").textContent = v && v.precio ? conIva(v.precio) : "Consultar";
     $("#pd-iva").textContent = v && v.precio ? "IVA incluido (" + eur(v.precio) + " sin IVA)" : "";
     setImage(v && v.imagen);
+    // Ficha técnica: la de la versión elegida si tiene una propia
+    const doc = $("#pd-content .pd-doc"), f = (v && v.ficha) || cur.m.ficha;
+    if (doc && f) doc.href = /^https?:/.test(f) ? f : "docs/" + f;
   }
 
   function buildConfigurator(m, conf) {
