@@ -8,20 +8,23 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const img = f => (window.EVX_IMG && window.EVX_IMG[f]) || `img/productos/${f}`;
   const model = id => D && D.modelos.find(m => m.id === id);
+  const tom = m => [...new Set([m.tomas, ...m.versiones.map(v => v.tomas)].join(" ").match(/\d+/g) || [])].sort();
+  const tk = m => { const t = tom(m); return t.includes("2") ? (t.includes("1") ? 1 : 2) : 0; };
+  const tomTxt = m => { const t = tom(m); return !t.length ? "" : t.length > 1 ? t.join(" o ") + " tomas" : t[0] === "1" ? "1 toma" : t[0] + " tomas"; };
 
   /* ---------- Selector de caso ---------- */
   const CASES = {
-    casa: { id: "CIR-01", tag: "domestico", uso: "uso-domestico", ubic: "Vivienda unifamiliar / chalet",
+    casa: { id: "CIR-01", tags: ["domestico", "comunitario"], uso: "uso-casa", ubic: "Vivienda unifamiliar / chalet",
       why: "Fabricado en España, con balanceo dinámico para que no salte la luz y preparado para carga solar.",
       aid: "Recupera hasta 4.000 € en la renta con la deducción de la Región de Murcia.",
       steps: ["Nos mandas una foto de tu cuadro eléctrico", "Presupuesto cerrado en menos de 24 h", "Lo instalamos, programamos y legalizamos"],
-      cta: "Pedir presupuesto para mi casa", nombre: "vivienda", mm: "Otros cargadores para tu casa", nota: "equipo; la instalación, según tu caso" },
-    comunidad: { id: "WAL-02", tag: "comunitario", uso: "uso-comunitario", ubic: "Plaza en garaje comunitario",
+      cta: "Pedir presupuesto para mi casa", nombre: "casa y garaje comunitario", mm: "Otros cargadores para tu casa, con 1 o 2 tomas", nota: "equipo; la instalación, según tu caso" },
+    comunidad: { id: "WAL-02", tags: ["domestico", "comunitario"], uso: "uso-casa", ubic: "Plaza en garaje comunitario",
       why: "Con app, control de potencia y tarjeta RFID. La línea sale de tu contador, así que la luz la pagas tú.",
       aid: "No necesitas permiso de la junta: basta con comunicarlo por escrito. Te damos el modelo.",
       steps: ["Fotos del cuarto de contadores y de tu plaza", "Comunicación a la comunidad", "Línea, cargador y certificado CIE"],
-      cta: "Pedir presupuesto para mi plaza", nombre: "garaje comunitario", mm: "Otros cargadores para garaje comunitario", nota: "equipo; la instalación, según los metros hasta tu plaza" },
-    empresa: { id: "CIR-03", tag: "empresa", uso: "uso-empresa", ubic: "Empresa / nave / comercio",
+      cta: "Pedir presupuesto para mi plaza", nombre: "casa y garaje comunitario", mm: "Otros cargadores para tu plaza, con 1 o 2 tomas", nota: "equipo; la instalación, según los metros hasta tu plaza" },
+    empresa: { id: "CIR-03", tags: ["empresa", "exterior"], uso: "uso-empresa", ubic: "Empresa / nave / comercio",
       why: "Dos tomas, tarjetas RFID y gestión remota por OCPP para empleados, clientes o flota.",
       aid: "Reparto de potencia: varios coches cargan a la vez sin subir la potencia contratada.",
       steps: ["Visita y estudio de potencia", "Propuesta por puntos de carga", "Instalación, alta de usuarios y mantenimiento"],
@@ -33,7 +36,8 @@
 
   function render(key) {
     const c = CASES[key], m = model(c.id); if (!c) return;
-    const all = D ? D.modelos.filter(x => x.tags.includes(c.tag)) : [];
+    // Casa y comunidad comparten cargadores (cambia el número de tomas): primero los de 1 toma, luego los de 2
+    const all = D ? D.modelos.filter(x => x.tags.some(t => c.tags.includes(t))).sort((a, b) => tk(a) - tk(b)) : [];
     set("model", m ? `${m.marca} ${m.modelo}` : "");
     set("why", c.why);
     set("price", m && m.desde ? `desde ${eurIva(m.desde)}` : "Consultar");
@@ -47,7 +51,7 @@
     const rail = $("mm-rail");
     if (rail) rail.innerHTML = all.filter(x => x.id !== c.id).map(x => `<li><a href="catalogo.html#p-${esc(x.id)}">
         <span class="im"><img src="${img(x.imagen)}" alt="" width="500" height="500" loading="lazy"></span>
-        <span><b>${esc(x.marca)} ${esc(x.modelo)}</b><small class="iva">${x.desde ? "desde " + eurIva(x.desde) : "Consultar"}</small><small>${x.desde ? "IVA incl. · " + eur(x.desde) + " sin IVA" : ""}</small></span></a></li>`).join("")
+        <span><small class="tm">${esc(tomTxt(x))}${x.tags.includes("exterior") ? " · torre de exterior" : ""}</small><b>${esc(x.marca)} ${esc(x.modelo)}</b><small class="iva">${x.desde ? "desde " + eurIva(x.desde) : "Consultar"}</small><small>${x.desde ? "IVA incl. · " + eur(x.desde) + " sin IVA" : ""}</small></span></a></li>`).join("")
       + `<li class="all"><a href="catalogo.html#${c.uso}">Ver todos en el catálogo →</a></li>`;
   }
 

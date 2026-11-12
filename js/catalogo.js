@@ -23,12 +23,21 @@
     cable: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="12" y="34" width="20" height="26" rx="5"/><rect x="64" y="34" width="20" height="26" rx="5"/><path d="M32 47c12 0 10 22 22 22s4-22 10-22"/></svg>',
     pole: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="36" y="8" width="24" height="18" rx="3"/><path d="M48 26v58M30 86h36"/></svg>'
   };
-  const USO = { domestico: "Vivienda", comunitario: "Garaje comunitario", empresa: "Empresa", poste: "Poste exterior", accesorio: "Accesorio" };
+  // Grupos del filtro «Uso». Vivienda y garaje comunitario van juntos: son los mismos cargadores y lo que cambia es el número de tomas.
+  // Los enlaces antiguos (#uso-domestico, #uso-comunitario, #uso-poste) llevan al grupo nuevo.
+  const ALIAS = { domestico: "casa", comunitario: "casa", vivienda: "casa", comunidad: "casa", poste: "exterior", torre: "exterior" };
+  // Las torres de exterior salen en su grupo y también en «Empresa», que es su cliente habitual
+  const inGroup = (m, g) => g === "casa" ? m.tags.includes("domestico") || m.tags.includes("comunitario") : g === "empresa" ? m.tags.includes("empresa") || m.tags.includes("exterior") : m.tags.includes(g);
   const BRANDS = ["Circutor", "Wallbox", "Orbis", "V2C"];
   const isAcc = m => m.tags.includes("accesorio");
+  const isExt = m => m.tags.includes("exterior");
+  // Tomas que ofrece un modelo, sumando las de todas sus versiones («1 o 2» cuenta para las dos)
+  const tomasOf = m => { const s = new Set(); [m.tomas, ...m.versiones.map(v => v.tomas)].forEach(t => (String(t || "").match(/\d+/g) || []).forEach(n => s.add(n))); return s; };
+  const tomasTxt = m => { const t = [...tomasOf(m)].sort(); return t.length ? (t.length > 1 ? t.join(" o ") + " tomas" : t[0] === "1" ? "1 toma" : t[0] + " tomas") : ""; };
+  const usoTxt = m => isExt(m) ? "Torre de exterior" : inGroup(m, "casa") ? (m.tags.includes("empresa") ? "Casa · comunidad · empresa" : "Casa y comunidad") : m.tags.includes("empresa") ? "Empresa" : "";
   const byId = id => DATA.modelos.find(x => x.id === id);
 
-  const state = { uso: "todos", marca: "todas", fase: "todas", extra: new Set(), orden: "rel", q: "" };
+  const state = { uso: "todos", tomas: "todas", marca: "todas", fase: "todas", extra: new Set(), orden: "rel", q: "" };
   const norm = t => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const hay = m => norm([m.marca, m.modelo, m.categoria, m.descripcion, m.conectividad, ...m.versiones.map(v => v.nombre + " " + v.codigo)].join(" "));
   const cmp = new Set();
@@ -37,8 +46,9 @@
   function matchExcept(m, skip) {
     if (state.q && !norm(state.q).split(/\s+/).every(w => hay(m).includes(w))) return false;
     if (skip !== "uso") {
-      if (state.uso === "todos" ? false : !m.tags.includes(state.uso)) return false;
+      if (state.uso !== "todos" && !inGroup(m, state.uso)) return false;
     }
+    if (skip !== "tomas" && state.tomas !== "todas" && (isAcc(m) || !tomasOf(m).has(state.tomas))) return false;
     if (skip !== "marca" && state.marca !== "todas" && m.marca !== state.marca) return false;
     if (skip !== "fase") {
       if (state.fase === "mono" && !/Mono/.test(m.fases)) return false;
@@ -52,7 +62,8 @@
   function countFor(key, v) {
     return DATA.modelos.filter(m => {
       if (!matchExcept(m, key)) return false;
-      if (key === "uso") return v === "todos" ? !isAcc(m) || state.uso === "accesorio" : m.tags.includes(v);
+      if (key === "uso") return v === "todos" ? !isAcc(m) || state.uso === "accesorio" : inGroup(m, v);
+      if (key === "tomas") return v === "todas" ? !isAcc(m) : !isAcc(m) && tomasOf(m).has(v);
       if (key === "marca") return v === "todas" || m.marca === v;
       if (key === "fase") return v === "todas" || (v === "mono" ? /Mono/.test(m.fases) : /Tri/.test(m.fases));
       if (key === "extra") return !!m[v];
@@ -108,9 +119,12 @@
       document.body.style.overflow = ""; $("#grid").scrollIntoView({ block: "start", behavior: "instant" });
     }));
   }
-  window.EVX_setUso = function (uso) {
-    state.uso = uso;
-    document.querySelectorAll('[data-filter="uso"] .fopt').forEach(c => c.setAttribute("aria-pressed", c.dataset.v === uso));
+  window.EVX_setUso = function (uso, tomas) {
+    uso = ALIAS[uso] || uso;
+    if (!document.querySelector(`[data-filter="uso"] [data-v="${uso}"]`)) uso = "todos";
+    state.uso = uso; state.tomas = ["1", "2"].includes(tomas) ? tomas : "todas";
+    document.querySelectorAll('[data-filter="uso"] .fopt').forEach(c => c.setAttribute("aria-pressed", c.dataset.v === state.uso));
+    document.querySelectorAll('[data-filter="tomas"] .fopt').forEach(c => c.setAttribute("aria-pressed", c.dataset.v === state.tomas));
     render();
   };
 
@@ -144,7 +158,7 @@
       const tipo = ((m.categoria || "").split("·")[1] || "Accesorio").trim();
       return [tipo, comp.length ? "Para " + comp.join(", ") : "", m.tomas && !["—", "1"].includes(m.tomas) ? m.tomas + " equipos" : ""].filter(Boolean);
     }
-    return [m.fases, shortOut(m.salida), m.tomas && m.tomas !== "1" ? m.tomas + " tomas" : ""].filter(Boolean);
+    return [tomasTxt(m), m.fases, shortOut(m.salida)].filter(Boolean);
   }
   /* Se mantiene para la ficha y el comparador */
   function specRows(m) {
@@ -155,7 +169,7 @@
       <dt>Salida</dt><dd>${esc(salida)}</dd>`;
   }
   function card(m) {
-    const acc = isAcc(m), usos = m.tags.map(t => USO[t]).filter(Boolean), uso = usos[0] || "";
+    const acc = isAcc(m), uso = usoTxt(m);
     const nv = m.versiones.length, name = esc(m.marca + " " + m.modelo);
     const price = m.desde
       ? `<div class="price"><span class="from">${acc ? "Desde" : "Equipo desde"}</span><span class="amt">${conIva(m.desde)}</span><span class="iva">IVA incluido · ${eur(m.desde)} sin IVA</span></div>`
@@ -184,8 +198,18 @@
     if (state.orden === "asc") list = [...list].sort((a, b) => isAcc(a) - isAcc(b) || (a.desde ?? 1e9) - (b.desde ?? 1e9));
     if (state.orden === "desc") list = [...list].sort((a, b) => isAcc(a) - isAcc(b) || (b.desde ?? -1) - (a.desde ?? -1));
     const ch = list.filter(m => !isAcc(m)), ac = list.filter(isAcc);
-    let html = ch.map(card).join("");
-    if (ac.length && state.uso !== "accesorio") html += `<div class="grid-sep"><span class="eyebrow">Pedestales y accesorios</span><p>Pedestales para instalar en suelo, tarjetas de acceso y cables de carga.</p></div>`;
+    const sep = (t, p) => `<div class="grid-sep"><span class="eyebrow">${t}</span><p>${p}</p></div>`;
+    const sec = (items, t, p, show) => items.length ? (show ? sep(t, p) : "") + items.map(card).join("") : "";
+    const wall = ch.filter(m => !isExt(m)), ext = ch.filter(isExt);
+    let html = "";
+    if (state.uso === "casa" && state.tomas === "todas") {
+      // Dentro de «Casa y comunidad» se separan por tomas; los de 1 o 2 tomas van con los de 2
+      const one = wall.filter(m => !tomasOf(m).has("2")), two = wall.filter(m => tomasOf(m).has("2"));
+      html += sec(one, "1 toma · un coche", "Para tu garaje o para tu plaza en el garaje comunitario: los mismos modelos valen en los dos casos.", true);
+      html += sec(two, "2 tomas · dos coches a la vez", "Para cargar dos coches en casa, o dos plazas del garaje con un solo equipo.", one.length > 0);
+    } else html += wall.map(card).join("");
+    html += sec(ext, "Torres de exterior", "Postes de suelo para aparcamientos al aire libre: empresas, comercios, hoteles y vía pública.", wall.length > 0);
+    if (ac.length && state.uso !== "accesorio") html += sep("Pedestales y accesorios", "Pedestales para instalar en suelo, tarjetas de acceso y cables de carga.");
     html += ac.map(card).join("");
     $("#grid").innerHTML = list.length ? html :
       `<div class="empty"><b>${state.q ? `No encontramos «${esc(state.q)}»` : "Ningún cargador cumple todos esos filtros"}</b><p>Prueba con menos filtros o pregúntanos directamente: te decimos qué modelo encaja.</p><div class="empty-acts"><button class="btn btn-secondary btn-sm" type="button" id="reset-f">Quitar filtros</button><a class="btn btn-primary btn-sm" href="tel:+34671445832">Llamar al 671 44 58 32</a></div></div>`;
@@ -193,7 +217,7 @@
     const r = $("#reset-f"); if (r) r.onclick = resetFilters;
     paintCounts(); chipsOn(); syncCmp();
     const fa = $("#f-apply"); if (fa) fa.textContent = list.length ? `Ver ${ch.length} ${ch.length === 1 ? "cargador" : "cargadores"}${ac.length ? " y " + ac.length + " accesorios" : ""}` : "Sin resultados: cambia los filtros";
-    const ftb = document.querySelector(".f-toggle"); if (ftb) { const n = (state.uso !== "todos") + (state.marca !== "todas") + (state.fase !== "todas") + state.extra.size; ftb.textContent = n ? `Filtros (${n})` : "Filtros"; }
+    const ftb = document.querySelector(".f-toggle"); if (ftb) { const n = (state.uso !== "todos") + (state.tomas !== "todas") + (state.marca !== "todas") + (state.fase !== "todas") + state.extra.size; ftb.textContent = n ? `Filtros (${n})` : "Filtros"; }
   }
   function chipsOn() {
     const box = $("#chips-on"); if (!box) return;
@@ -201,6 +225,7 @@
     const c = [];
     if (state.q) c.push(["q:", `«${state.q}»`]);
     if (state.uso !== "todos") c.push(["uso:" + state.uso, lab("uso", state.uso)]);
+    if (state.tomas !== "todas") c.push(["tomas:" + state.tomas, lab("tomas", state.tomas)]);
     if (state.marca !== "todas") c.push(["marca:" + state.marca, state.marca]);
     if (state.fase !== "todas") c.push(["fase:" + state.fase, lab("fase", state.fase)]);
     state.extra.forEach(x => c.push(["extra:" + x, lab("extra", x)]));
@@ -208,7 +233,7 @@
   }
   function resetFilters() {
     state.q = ""; const qi = $("#q"); if (qi) qi.value = "";
-    Object.assign(state, { uso: "todos", marca: "todas", fase: "todas", extra: new Set() });
+    Object.assign(state, { uso: "todos", tomas: "todas", marca: "todas", fase: "todas", extra: new Set() });
     document.querySelectorAll("[data-filter] .fopt").forEach(c => c.setAttribute("aria-pressed", ["todos", "todas"].includes(c.dataset.v)));
     render();
   }
@@ -337,6 +362,9 @@
       detalle: sel ? sel.detalle : `${m.potencias} kW · ${m.fases}`, precio, modalidad,
       fases: (sel && sel.fases) || (sel && /Tri/.test(sel.version || "") ? "Tri" : sel && /Mono/.test(sel.version || "") ? "Mono" : m.fases)
     });
+    // Una torre de exterior deja elegido el tipo de ubicación en el formulario
+    const u = document.getElementById("ubicacion");
+    if (u && isExt(m) && [...u.options].some(o => o.text === "Aparcamiento exterior / poste")) u.value = "Aparcamiento exterior / poste";
     if (dlg().open) dlg().close();
     document.getElementById("contacto").scrollIntoView({ behavior: "smooth" });
   }
@@ -371,10 +399,10 @@
   document.addEventListener("DOMContentLoaded", () => {
     if (!$("#grid")) return;
     buildFilters(); render();
-    // Enlaces directos: catalogo.html#uso-domestico (filtro) o catalogo.html#p-CIR-01 (ficha)
+    // Enlaces directos: catalogo.html#uso-casa, #uso-casa-2 (con 2 tomas), #uso-exterior (filtro) o catalogo.html#p-CIR-01 (ficha)
     const fromHash = () => {
       const h = decodeURIComponent(location.hash.slice(1));
-      if (h.startsWith("uso-")) window.EVX_setUso(h.slice(4));
+      if (h.startsWith("uso-")) { const [g, n] = h.slice(4).split("-"); window.EVX_setUso(g, n); }
       else if (h.startsWith("p-") && byId(h.slice(2))) openProduct(h.slice(2));
     };
     fromHash(); addEventListener("hashchange", fromHash);
