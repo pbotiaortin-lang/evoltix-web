@@ -83,6 +83,29 @@
       // Con un ámbito elegido, las opciones que no tienen ningún equipo (p. ej. torres en casa) no se muestran
       b.hidden = key === "uso" && state.ambito !== "todos" && n === 0 && b.getAttribute("aria-pressed") !== "true";
     });
+    // La fila de usos (móvil y tablet) copia el estado, los contadores y lo que se oculta del filtro «Uso»
+    document.querySelectorAll("[data-uc]").forEach(u => {
+      const b = document.querySelector(`[data-filter="uso"] [data-v="${u.dataset.uc}"]`); if (!b) return;
+      u.setAttribute("aria-pressed", b.getAttribute("aria-pressed")); u.hidden = b.hidden;
+      u.querySelector(".n").textContent = b.querySelector(".n") ? b.querySelector(".n").textContent : "";
+    });
+    // El botón elegido siempre a la vista dentro de la fila (sin mover la página)
+    const row = document.querySelector(".uso-chips"), on = row && row.querySelector('[aria-pressed="true"]');
+    if (on && row.scrollWidth > row.clientWidth) {
+      const l = on.offsetLeft - row.offsetLeft, r = l + on.offsetWidth;
+      if (l < row.scrollLeft + 16 || r > row.scrollLeft + row.clientWidth - 16) row.scrollLeft = Math.max(0, l - 16);
+    }
+  }
+  // En móvil y tablet los filtros van en un panel; el uso (1 toma, 2 tomas…) es la decisión principal, así que va también en una fila de botones encima de los resultados
+  const UC = { todos: "Todos", 1: "1 toma · un coche", 2: "2 tomas · dos coches", exterior: "Torres de exterior", accesorio: "Pedestales y accesorios" };
+  function buildUsoChips() {
+    const s = document.querySelector(".cat-search"); if (!s || document.querySelector(".uso-chips")) return;
+    const row = document.createElement("div");
+    row.className = "uso-chips"; row.setAttribute("role", "group"); row.setAttribute("aria-label", "Tipo de cargador");
+    row.innerHTML = [...document.querySelectorAll('[data-filter="uso"] .fopt')].map(b =>
+      `<button type="button" class="uc" data-uc="${esc(b.dataset.v)}" aria-pressed="false">${esc(UC[b.dataset.v] || b.textContent)}<span class="n"></span></button>`).join("");
+    s.after(row);
+    row.addEventListener("click", e => { const u = e.target.closest("[data-uc]"); if (u) window.EVX_setUso(u.dataset.uc); });
   }
 
   function buildFilters() {
@@ -121,7 +144,7 @@
     if (ft) ft.addEventListener("click", () => { const o = $("#filters").classList.toggle("open"); ft.setAttribute("aria-expanded", o); document.body.style.overflow = o ? "hidden" : ""; });
     document.querySelectorAll("[data-f-close]").forEach(b => b.addEventListener("click", () => {
       $("#filters").classList.remove("open"); if (ft) { ft.setAttribute("aria-expanded", false); ft.focus({ preventScroll: true }); }
-      document.body.style.overflow = ""; $("#grid").scrollIntoView({ block: "start", behavior: "instant" });
+      document.body.style.overflow = ""; (document.querySelector(".uso-chips") || $("#grid")).scrollIntoView({ block: "start", behavior: "instant" });
     }));
   }
   const pressUso = () => document.querySelectorAll('[data-filter="uso"] .fopt').forEach(c => c.setAttribute("aria-pressed", c.dataset.v === state.uso));
@@ -233,7 +256,7 @@
     const r = $("#reset-f"); if (r) r.onclick = resetFilters;
     paintCounts(); chipsOn(); syncCmp();
     const fa = $("#f-apply"); if (fa) fa.textContent = list.length ? `Ver ${ch.length} ${ch.length === 1 ? "cargador" : "cargadores"}${ac.length ? " y " + ac.length + " accesorios" : ""}` : "Sin resultados: cambia los filtros";
-    const ftb = document.querySelector(".f-toggle"); if (ftb) { const n = (state.uso !== "todos") + (state.marca !== "todas") + (state.fase !== "todas") + state.extra.size; ftb.textContent = n ? `Filtros (${n})` : "Filtros"; }
+    const ftb = document.querySelector(".f-toggle"); if (ftb) { const ucOn = document.querySelector(".uso-chips") && getComputedStyle(document.querySelector(".uso-chips")).display !== "none", n = (!ucOn && state.uso !== "todos") + (state.marca !== "todas") + (state.fase !== "todas") + state.extra.size; ftb.textContent = n ? `Filtros (${n})` : "Filtros"; }
   }
   function chipsOn() {
     const box = $("#chips-on"); if (!box) return;
@@ -273,7 +296,7 @@
         ${m.ficha ? `<a class="pd-doc" href="${/^https?:/.test(m.ficha) ? esc(m.ficha) : "docs/" + esc(m.ficha)}" target="_blank" rel="noopener">${ICON.doc}<span><b>Ficha técnica del fabricante</b><small>PDF · ${esc(m.marca)}</small></span></a>` : ""}
       </div>
       <div class="pd-body">
-        <div><div class="eyebrow">${esc(m.marca)} · ${esc(m.categoria)}</div><h2 id="pd-title" style="margin-top:8px">${esc(m.modelo)}</h2></div>
+        <div><div class="eyebrow">${esc(isAcc(m) ? m.marca + " · " + m.categoria : [m.marca, tomasTxt(m), usoTxt(m)].filter(Boolean).join(" · "))}</div><h2 id="pd-title" style="margin-top:8px">${esc(m.modelo)}</h2></div>
         <p class="pd-desc">${esc(m.descripcion)}</p>
         <div id="pd-opts" class="pd-opts"></div>
         <div class="total" aria-live="polite"><div><small>${isAcc(m) ? "Precio" : "Precio del equipo"}</small><span class="amt" id="pd-total"></span><small><span id="pd-iva"></span>${isAcc(m) ? "" : " · la instalación se presupuesta aparte"}</small></div></div>
@@ -404,11 +427,12 @@
       ["Balanceo dinámico", m => yes(m.detalle["Balanceo dinámico"])], ["Carga solar", m => yes(m.detalle["Integración solar"])], ["OCPP", m => yes(m.detalle["OCPP"])], ["RFID", m => yes(m.detalle["RFID"])], ["Contador MID", m => yes(m.detalle["Contador MID"])], ["Protecciones", m => yes(m.detalle["Protecciones integradas"])], ["Versiones", m => m.versiones.length]];
     $("#pd-content").innerHTML = `<div class="cmp-view"><div class="eyebrow">Comparar</div><h2 id="pd-title" style="margin:8px 0 16px">${ms.map(m => esc(m.modelo)).join(" · ")}</h2>
       <label class="cmp-only"><input type="checkbox" id="cmp-only"> Mostrar solo lo que cambia</label>
-      <div class="tbl"><table class="cmp-t"><thead><tr><th scope="col"><span class="visually-hidden">Característica</span></th>${ms.map(m => `<th scope="col"><span class="rel-img">${media(m)}</span><small>${esc(m.marca)}</small>${esc(m.modelo)}</th>`).join("")}</tr></thead>
+      <div class="tbl"><table class="cmp-t" style="--n:${ms.length}"><thead><tr><th scope="col"><span class="visually-hidden">Característica</span></th>${ms.map(m => `<th scope="col"><span class="rel-img">${media(m)}</span><small>${esc(m.marca)}</small>${esc(m.modelo)}</th>`).join("")}</tr></thead>
       <tbody>${rows.map(([k, f]) => { const vals = ms.map(m => String(f(m))); const same = vals.every(v => v === vals[0]); return `<tr class="${same ? "same" : "diff"}"><th scope="row">${k}</th>${vals.map(v => `<td>${v}</td>`).join("")}</tr>`; }).join("")}
       <tr><th scope="row"></th>${ms.map(m => `<td><button class="btn btn-primary btn-sm" type="button" data-cmp-quote="${esc(m.id)}">Pedir precio</button></td>`).join("")}</tr></tbody></table></div>
       <a class="pd-call" href="tel:+34671445832"><span>¿No lo tienes claro?</span><b>Llama al 671 44 58 32 y te aconsejamos</b></a></div>`;
     const only = $("#cmp-only"); if (only) only.onchange = () => $(".cmp-t").classList.toggle("only-diff", only.checked);
+    if (only && matchMedia("(max-width:640px)").matches) { only.checked = true; $(".cmp-t").classList.add("only-diff"); }
     $("#pd-content").querySelectorAll("[data-cmp-quote]").forEach(b => b.onclick = () => { const m = byId(b.dataset.cmpQuote); cur = { m }; toForm("instalacion", m, null); });
     if (!dlg().open) dlg().showModal();
   }
@@ -416,7 +440,7 @@
   /* ---------- Inicio ---------- */
   document.addEventListener("DOMContentLoaded", () => {
     if (!$("#grid")) return;
-    buildFilters(); render();
+    buildFilters(); buildUsoChips(); render();
     // Enlaces directos: catalogo.html#uso-1, #uso-2, #uso-exterior, #uso-accesorio, #uso-casa, #uso-empresa (filtro) o #p-CIR-01 (ficha)
     const fromHash = () => {
       const h = decodeURIComponent(location.hash.slice(1));
@@ -428,7 +452,8 @@
       const c = e.target.closest("[data-cmp]"); if (!c) return;
       c.checked ? cmp.add(c.dataset.cmp) : cmp.delete(c.dataset.cmp); syncCmp();
     });
-    const bar = $("#cmp-bar");
+    const bar = $("#cmp-bar"), form = document.getElementById("contacto");
+    if (form && "IntersectionObserver" in window) new IntersectionObserver(es => es.forEach(e => document.body.classList.toggle("at-form", e.isIntersecting)), { rootMargin: "0px 0px -30% 0px" }).observe(form);
     if (bar) bar.addEventListener("click", e => {
       const u = e.target.closest("[data-uncmp]"); if (u) { cmp.delete(u.dataset.uncmp); syncCmp(); }
       if (e.target.closest("#cmp-go")) openCompare();

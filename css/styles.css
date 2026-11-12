@@ -661,6 +661,7 @@ a[href^="tel:"]{white-space:nowrap}
 @media (max-width:960px){
   .hero-head,.svc,.aid2,.biz,.zona-grid,.faq-wrap,.contact .wrap,.page-hero .wrap,.doc,.sec-head.split,.cta-end{grid-template-columns:1fr}
   .svc .sec-head,.faq-wrap .sec-head,.contact-aside,.doc-main{display:grid;gap:40px;min-width:0}
+  .contact-aside{position:static}
   .doc-aside{position:static}
   .cases{grid-template-columns:1fr;gap:12px}
   .case{min-height:0;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:16px;padding:16px 52px 16px 16px}
@@ -679,7 +680,7 @@ a[href^="tel:"]{white-space:nowrap}
   .biz-visual{aspect-ratio:16/10}
   .biz-visual img{width:50%}
   /* Filtros del catálogo en panel */
-  .cat-layout{grid-template-columns:1fr}
+  .cat-layout{grid-template-columns:minmax(0,1fr)}
   .f-toggle{display:inline-flex}
   .filters{position:fixed;inset:0;z-index:85;max-height:none;background:var(--bg);padding:0 max(var(--gut),env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(var(--gut),env(safe-area-inset-left,0px));
     opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .2s ease,transform .25s var(--ease-out),visibility 0s .25s;align-content:start;overflow:auto}
@@ -736,6 +737,104 @@ a[href^="tel:"]{white-space:nowrap}
   .zona-list{columns:2 140px}
   .footer .wrap{grid-template-columns:1fr}
   .seg{grid-template-columns:1fr}
+}
+
+/* ==========================================================================
+   Móvil y tablet (hasta 1279 px). La vista de ordenador no cambia.
+   ========================================================================== */
+.uso-chips{display:none}
+@media (max-width:1279px){
+  /* Tarjetas de caso: foto arriba y texto a todo el ancho para que no se apriete */
+  .case{grid-template-columns:1fr;align-items:start;align-content:start;gap:14px;min-height:0}
+  .case .pic{order:-1;justify-self:start;height:128px;padding:8px 10px}
+  .case .ct{padding-top:0}
+}
+@media (max-width:1279px) and (min-width:761px){
+  /* Teléfono visible en la cabecera de la tablet, junto a Presupuesto */
+  .head-cta .head-tel{display:inline-flex;width:44px;height:44px;justify-content:center;padding:0;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+}
+@media (max-width:960px){
+  .cases{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .case{padding:18px 18px 20px}
+  .case b{font-size:1.375rem}
+  .case .pic img+img{display:block}
+  .case .pic img{max-width:84px}
+  /* Fila de usos encima de los resultados, desplazable en horizontal */
+  .uso-chips{display:flex;gap:8px;margin:12px calc(-1 * var(--gut)) 0;padding:2px var(--gut) 6px;overflow-x:auto;scroll-snap-type:x proximity;scroll-padding-inline:var(--gut);scrollbar-width:none;scroll-margin-top:calc(var(--head-h) + 8px)}
+  .uso-chips::-webkit-scrollbar{display:none}
+  .uc{flex:none;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line-strong);background:var(--card);color:var(--ink);font:500 .9375rem/1 var(--body);scroll-snap-align:start;cursor:pointer;transition:background-color .15s ease,border-color .15s ease,transform .16s var(--ease-out)}
+  .uc .n{font-size:.8125rem;color:var(--soft);font-variant-numeric:tabular-nums}
+  .uc[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+  .uc[aria-pressed="true"] .n{color:inherit}
+  .uc:active{transform:scale(.97)}
+  /* En el panel ya no hace falta repetir el uso */
+  .filters [data-filter="uso"]{display:none}
+  .chips-on [data-clear^="uso:"]{display:none}
+  .card .lnk{white-space:nowrap}
+  /* Contacto: el formulario justo después del título; teléfono, correo y consejo, debajo */
+  .contact .wrap{row-gap:16px}
+  .contact-aside{display:contents}
+  .quote{order:1;margin-top:8px}
+  .contact-aside .call-card{order:2;margin-top:24px}
+  .contact-aside .rows{order:3}
+  .contact-aside>.hint{order:4}
+  /* La barra de comparar se aparta al llegar al formulario */
+  body.at-form .cmp-bar{display:none}
+  /* Ficha: el PDF va después de la información y el botón de presupuesto queda siempre a mano */
+  .pd-in{display:flex;flex-direction:column}
+  .pd-media{display:contents}
+  .pd-img{order:0;background:var(--plate);padding:20px 16px 12px}
+  .pd-body{order:1;display:flex;flex-direction:column;gap:20px}
+  .pd-doc{order:2;margin:0 18px 24px}
+  .pd-acts{display:contents}
+  #pd-inst{position:sticky;bottom:12px;z-index:3;box-shadow:0 8px 24px rgb(6 22 51 / .28),0 0 0 6px var(--card)}
+}
+@media (max-width:960px) and (min-width:641px){
+  /* Panel de filtros como cajón lateral en la tablet */
+  .filters{left:auto;width:min(440px,100%);border-left:1px solid var(--line)}
+  .filters.open{box-shadow:0 0 0 100vmax rgb(6 22 51 / .4)}
+  .f-apply{left:auto;right:var(--gut);width:calc(min(440px,100vw) - 2 * var(--gut))}
+}
+@media (max-width:760px){
+  /* En el móvil la barra de abajo ya tiene Llamar y Pedir presupuesto: la cabecera queda limpia */
+  .head-cta .cta-short{display:none}
+}
+@media (max-width:640px){
+  .cases{grid-template-columns:1fr}
+  .case{grid-template-columns:auto minmax(0,1fr);align-items:center;padding:16px 52px 16px 16px}
+  .case .pic{height:96px;padding:6px}
+  .case .pic img{max-width:56px}
+  .case .pic img+img{display:none}
+  .case b{font-size:1.25rem}
+  .card .lnk,.card .cmp-l{font-size:.875rem}
+  /* Ficha a pantalla completa en el móvil */
+  dialog.pd[open]{display:flex;flex-direction:column}
+  dialog.pd .pd-close{position:relative;top:auto;right:auto;flex:none;align-self:flex-end;margin:calc(8px + env(safe-area-inset-top,0px)) 12px 4px}
+  dialog.pd .pd-in{flex:1;min-height:0;height:auto;max-height:none}
+  .pd-img img{height:170px}
+  .pd-img{padding:8px 16px 12px}
+  dialog.pd{width:100%;max-width:100%;height:100dvh;max-height:100dvh;margin:0;border-radius:0}
+  .pd-body{padding:24px 18px calc(24px + env(safe-area-inset-bottom,0px))}
+  /* Barra de comparar compacta: sin la lista de modelos, que ya se marcan en cada tarjeta */
+  .cmp-bar .cmp-list{display:none}
+  .cmp-bar .wrap{flex-wrap:nowrap;justify-content:space-between}
+  /* Comparador en el móvil: cada característica a lo ancho y los modelos en columnas debajo, con la cabecera fija */
+  .cmp-view{max-height:none;overflow:visible;padding-top:8px}
+  .cmp-view .tbl{overflow:visible}
+  .cmp-t{display:block;min-width:0}
+  .cmp-t thead{display:block;position:sticky;top:0;z-index:1;background:var(--card);border-bottom:1px solid var(--line-strong)}
+  .cmp-t tbody{display:block}
+  .cmp-t tr{display:grid;grid-template-columns:repeat(var(--n,2),minmax(0,1fr));column-gap:12px}
+  .cmp-t thead th:first-child{display:none}
+  .cmp-t th,.cmp-t td{padding:8px 0;border:0}
+  .cmp-t thead th{padding:10px 0;font-size:.9375rem}
+  .cmp-t thead .rel-img{width:56px;height:56px;margin-bottom:4px}
+  .cmp-t tbody tr{padding:6px 0;border-bottom:1px solid var(--line)}
+  .cmp-t tbody th{grid-column:1/-1;padding:4px 0 0;font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--soft)}
+  .cmp-t tbody td{padding:2px 0 4px}
+  .cmp-t tbody tr:last-child th{display:none}
+  .cmp-t tbody tr:last-child{border-bottom:0;padding-top:12px}
+  .cmp-t .btn{width:100%}
 }
 
 @media (prefers-reduced-motion:reduce){
