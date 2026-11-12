@@ -77,6 +77,43 @@
   const fromHash = () => { const h = location.hash.slice(1); if (CASES[h] && cases.length) { choose(h, false); const s = $("caso"); if (s) s.scrollIntoView(); } };
   addEventListener("hashchange", fromHash); fromHash();
 
+
+  /* ---------- Proceso: avanza solo mientras se ve; al pulsar un paso se queda en él unos segundos ---------- */
+  const proc = document.querySelector("[data-proc]");
+  if (proc) {
+    const items = [...proc.querySelectorAll("li")], btns = [...proc.querySelectorAll(".pstep")];
+    const meter = document.querySelector(".proc-meter"), pct = document.querySelector("[data-pct]");
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let step = 0, timer = null, holdUntil = 0, visible = false;
+    const show = i => {
+      step = i;
+      items.forEach((li, k) => { li.classList.toggle("done", k < i); li.classList.toggle("on", k === i); });
+      btns.forEach((b, k) => k === i ? b.setAttribute("aria-current", "step") : b.removeAttribute("aria-current"));
+      const p = items.length > 1 ? i / (items.length - 1) : 1;
+      proc.style.setProperty("--p", p);
+      if (meter) { meter.style.setProperty("--bp", (i + 1) / items.length); meter.classList.toggle("full", i === items.length - 1); }
+      if (i === items.length - 1) holdUntil = Math.max(holdUntil, Date.now() + 2600);
+      if (pct) pct.textContent = Math.round((i + 1) / items.length * 100) + "\u00a0%";
+    };
+    const tick = () => {
+      if (!visible || Date.now() < holdUntil) return;
+      show(step === items.length - 1 ? 0 : step + 1);
+    };
+    btns.forEach((b, k) => {
+      b.addEventListener("click", () => { holdUntil = Date.now() + 8000; show(k); });
+      b.addEventListener("focus", () => { holdUntil = Date.now() + 8000; show(k); });
+    });
+    if (reduce) show(items.length - 1);
+    else {
+      show(0);
+      new IntersectionObserver(es => es.forEach(e => {
+        visible = e.isIntersecting;
+        if (visible && !timer) timer = setInterval(tick, 2400);
+        if (!visible && timer) { clearInterval(timer); timer = null; }
+      }), { threshold: 0.35 }).observe(proc);
+    }
+  }
+
   /* ---------- Mantenimiento: preselecciona el formulario ---------- */
   const setMant = () => { const u = $("ubicacion"); if (u) u.value = "Mantenimiento o reparación de un cargador"; };
   document.querySelectorAll("[data-mant]").forEach(a => a.addEventListener("click", setMant));
