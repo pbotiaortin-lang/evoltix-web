@@ -539,22 +539,10 @@ a[href^="tel:"]{white-space:nowrap}
 .cars{position:absolute;left:12px;top:12px;display:flex;gap:4px;padding:6px 10px;border-radius:var(--pill);background:#E4F5F1;color:#00705F}
 @media (hover:hover) and (pointer:fine){.use:hover{transform:translateY(-2px)}.use:hover .ph img{transform:scale(1.03)}.use:hover .go{transform:translateX(3px)}}
 .uses-note{margin-top:20px}
-/* 1 toma frente a 2 tomas */
-.vs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.vs-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 24px;align-items:end;padding:24px;border-radius:24px;background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none;transition:transform .2s var(--ease-out),border-color .2s ease}
-.vs-svg{grid-column:1/-1;width:100%;height:auto;max-height:240px}
-.vs-t{display:grid;gap:4px}
-.vs-t b{font:700 var(--t3)/1.1 var(--display);color:var(--head)}
-.vs-t span{color:var(--muted);font-size:var(--t5)}
-.vs-p{font-weight:600;font-size:var(--t5);font-variant-numeric:tabular-nums;white-space:nowrap}
-@media (hover:hover) and (pointer:fine){.vs-card:hover{transform:translateY(-2px);border-color:var(--line-strong)}}
 /* Dibujos de línea (esquemas): colores del sistema, también en oscuro */
-.s-wall{fill:var(--surface-2)}
 .s-bay{fill:none;stroke:var(--line-strong);stroke-width:2;stroke-dasharray:6 6}
 .s-box{fill:var(--accent)}
 .s-box.on{fill:var(--teal)}
-.s-led{fill:var(--teal)}
-.s-cable{fill:none;stroke:var(--head);stroke-width:2.5;stroke-linecap:round}
 .s-car rect{fill:var(--card);stroke:var(--head);stroke-width:2}
 .s-car path{fill:var(--mint-2);stroke:var(--head);stroke-width:1.5;stroke-linejoin:round}
 .s-car.mine rect{stroke:var(--teal);stroke-width:3}
@@ -606,7 +594,7 @@ a[href^="tel:"]{white-space:nowrap}
   .hcard{grid-template-columns:1fr;border-radius:24px}
   .stage{justify-self:center;max-width:340px}
   .hcard{gap:24px}
-  .split2,.vs{grid-template-columns:1fr}
+  .split2{grid-template-columns:1fr}
   .steps{grid-template-columns:1fr;gap:20px}
   .steps::before{left:31px;right:auto;top:20px;bottom:20px;border-top:0;border-left:2px dashed var(--mint-2)}
   .steps li{grid-template-columns:64px minmax(0,1fr);justify-items:start;text-align:left;column-gap:16px;row-gap:2px;align-items:center}
@@ -628,7 +616,6 @@ a[href^="tel:"]{white-space:nowrap}
   .tiles li{grid-template-columns:48px minmax(0,1fr);column-gap:16px;row-gap:2px;padding:18px}
   .tiles .ic{grid-row:1/3;margin:0}
   .nums li{padding:20px}
-  .vs-card{padding:18px;grid-template-columns:1fr}
   .figs{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){
