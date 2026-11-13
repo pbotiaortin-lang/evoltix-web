@@ -86,6 +86,7 @@
 <section class="hero" aria-labelledby="h1"><div class="wrap">
   <div class="hcard">
     <div class="hcopy" data-enter>
+      <p class="eyebrow">Instalación y mantenimiento de cargadores · Región de Murcia</p>
       <h1 id="h1">Carga tu coche en casa. Nosotros lo instalamos.</h1>
       <p class="lead">Circutor, Wallbox, Orbis, V2C, Simon y Schneider Electric con precio. Instalados y legalizados en la Región de Murcia.</p>
       <div class="actions"><a class="btn btn-primary btn-lg" href="catalogo.html">Ver cargadores</a><a class="btn btn-secondary btn-lg" href="#contacto">Pedir presupuesto</a></div>
@@ -122,6 +123,13 @@
   <p class="note uses-note">Equipo con IVA. Instalación aparte.</p>
 </div></section>
 
+<!-- ========== CATÁLOGO EN LA PORTADA: cargadores con precio, generados desde js/catalogo-data.js ========== -->
+<section class="section tint" id="catalogo-portada" aria-labelledby="rail-t"><div class="wrap">
+  <div class="sec-head split"><div class="sh"><h2 id="rail-t">Cargadores con precio</h2><p class="lead" data-rail-count>Del catálogo, con IVA. Toca uno para ver versiones y ficha.</p></div>
+    <div class="rail-nav"><button class="rbtn" type="button" data-rail="-1" aria-label="Cargadores anteriores"><svg width="18" height="18" aria-hidden="true" style="transform:scaleX(-1)"><use href="#i-arrow"/></svg></button><button class="rbtn" type="button" data-rail="1" aria-label="Más cargadores"><svg width="18" height="18" aria-hidden="true"><use href="#i-arrow"/></svg></button><a class="btn btn-primary btn-sm" href="catalogo.html">Todo el catálogo</a></div></div>
+  <ul class="rail" id="rail" tabindex="0" aria-label="Cargadores del catálogo"><li class="rail-empty"><a class="tlink" href="catalogo.html">Ver el catálogo de cargadores</a></li></ul>
+</div></section>
+
 <!-- ========== PROCESO ========== -->
 <section class="section" id="proceso" aria-labelledby="proc-t"><div class="wrap">
   <div class="sec-head"><h2 id="proc-t">De la llamada al primer enchufe</h2></div>
@@ -145,29 +153,21 @@
   </ul>
 </div></section>
 
-<!-- ========== GARAJE COMUNITARIO: esquema de la instalación ========== -->
-<section class="section" id="comunidad" aria-labelledby="gc-t"><div class="wrap split2">
-  <div class="sec-head flush"><h2 id="gc-t">Tu plaza en el garaje comunitario</h2><p class="lead">Sin acuerdo de la junta: basta con comunicarlo. Tu línea va de tu contador a tu plaza.</p><a class="tlink" href="garaje-comunitario.html">Cómo funciona <svg class="arr" width="14" height="14"><use href="#i-arrow"/></svg></a></div>
-  <figure class="scheme">
-    <svg viewBox="0 0 560 300" role="img" aria-labelledby="gc-svg-t">
-      <title id="gc-svg-t">Esquema: tu línea sale de tu contador en el cuarto de contadores y llega por el techo del garaje hasta el cargador de tu plaza</title>
-      <rect class="s-room" x="16" y="40" width="110" height="150" rx="14"/>
-      <circle class="s-meter" cx="48" cy="80" r="12"/><circle class="s-meter" cx="94" cy="80" r="12"/><circle class="s-meter on" cx="48" cy="120" r="12"/><circle class="s-meter" cx="94" cy="120" r="12"/><circle class="s-meter" cx="48" cy="160" r="12"/><circle class="s-meter" cx="94" cy="160" r="12"/>
-      <path class="s-line" d="M60 120h40v-96h330v118"/>
-      <path class="s-bay" d="M160 150v136M260 150v136M360 150v136M460 150v136M540 150v136"/>
-      <g class="s-car" transform="translate(178 186)"><rect width="64" height="96" rx="18"/><path d="M10 26h44l-5 14H15z"/></g>
-      <g class="s-car" transform="translate(278 186)"><rect width="64" height="96" rx="18"/><path d="M10 26h44l-5 14H15z"/></g>
-      <g class="s-car mine" transform="translate(378 186)"><rect width="64" height="96" rx="18"/><path d="M10 26h44l-5 14H15z"/></g>
-      <rect class="s-box on" x="414" y="142" width="32" height="38" rx="9"/>
-      <text class="s-lbl" x="16" y="220">Cuarto de</text><text class="s-lbl" x="16" y="244">contadores</text>
-      <text class="s-lbl on" x="150" y="58">Tu línea</text>
-      <text class="s-lbl on" x="456" y="168">Tu plaza</text>
-    </svg>
-  </figure>
+<!-- ========== ZONA Y SERVICIOS: texto para búsquedas locales, con el municipio rotando ========== -->
+<section class="section tint" id="zona" aria-labelledby="zona-t"><div class="wrap split2 top">
+  <div class="sec-head flush">
+    <h2 id="zona-t" class="rot-h">Instalamos y mantenemos cargadores en <span class="rot" aria-hidden="true"><span class="on">Molina de Segura</span><span>Murcia</span><span>Cartagena</span><span>Lorca</span><span>Alcantarilla</span><span>Cieza</span><span>Yecla</span><span>toda la Región</span></span><span class="visually-hidden">toda la Región de Murcia</span></h2>
+    <p class="lead">Instalación, legalización y mantenimiento de cargadores de coche eléctrico en la Región de Murcia, desde Molina de Segura.</p>
+  </div>
+  <ul class="svc-links">
+    <li><a href="precio-instalacion-cargador.html"><span class="ic" aria-hidden="true"><svg width="24" height="24"><use href="#i-bolt"/></svg></span><span><b>Instalación de cargadores</b><span>Presupuesto cerrado y CIE</span></span><svg class="arr" width="18" height="18" aria-hidden="true"><use href="#i-arrow"/></svg></a></li>
+    <li><a href="garaje-comunitario.html"><span class="ic" aria-hidden="true"><svg width="24" height="24"><use href="#i-key"/></svg></span><span><b>Garaje comunitario</b><span>Sin acuerdo de la junta</span></span><svg class="arr" width="18" height="18" aria-hidden="true"><use href="#i-arrow"/></svg></a></li>
+    <li><a href="mantenimiento-cargador-coche-electrico.html"><span class="ic" aria-hidden="true"><svg width="24" height="24"><use href="#i-wrench"/></svg></span><span><b>Mantenimiento y reparación</b><span>De cualquier marca</span></span><svg class="arr" width="18" height="18" aria-hidden="true"><use href="#i-arrow"/></svg></a></li>
+  </ul>
 </div></section>
 
 <!-- ========== EMPRESAS ========== -->
-<section class="section tint" id="empresas" aria-labelledby="emp-t"><div class="wrap">
+<section class="section" id="empresas" aria-labelledby="emp-t"><div class="wrap">
   <div class="sec-head split"><div class="sh"><h2 id="emp-t">Recarga para empresas y flotas</h2><p class="lead">Empleados, clientes y flota, con control de cada carga.</p></div><div class="actions"><a class="btn btn-primary btn-sm" href="catalogo.html#uso-empresa">Cargadores para empresas</a></div></div>
   <ul class="tiles">
     <li><span class="ic" aria-hidden="true"><svg width="24" height="24"><use href="#i-card"/></svg></span><b>Tarjetas RFID y app</b></li>

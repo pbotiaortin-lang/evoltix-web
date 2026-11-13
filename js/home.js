@@ -47,8 +47,36 @@
     if (opt.length) Promise.all(opt.map(probe)).then(r => { const ok = r.filter(Boolean); if (ok.length) paint(fixed.concat(ok)); });
   }
 
+  /* ---------- Catálogo en la portada: carril de cargadores con precio ---------- */
+  const rail = $("rail");
+  if (rail && D) {
+    const isAcc = m => m.tags.includes("accesorio"), isExt = m => m.tags.includes("exterior");
+    const tomas = m => { const s = new Set(); [m.tomas, ...m.versiones.map(v => v.tomas)].forEach(t => (String(t || "").match(/\d+/g) || []).forEach(n => s.add(n))); return [...s].sort(); };
+    const tipo = m => isExt(m) ? "Torre de exterior" : (t => t.length > 1 ? t.join(" o ") + " tomas" : t[0] === "1" ? "1 toma" : t[0] + " tomas")(tomas(m));
+    const ms = D.modelos.filter(m => !isAcc(m) && m.imagen && m.desde);
+    rail.innerHTML = ms.map(m => `<li><a class="pcard" href="catalogo.html#p-${esc(m.id)}">
+      <span class="ph"><img src="${img(m.imagen)}" alt="" loading="lazy" width="500" height="500"></span>
+      <small>${esc(m.marca)} · ${esc(tipo(m))}</small><b>${esc(m.modelo)}</b><span class="kw">${esc(m.potencias)} kW</span>
+      <span class="pr"><strong>${m.versiones.length > 1 ? "desde " : ""}${eurIva(m.desde)}</strong><small>IVA incluido · ${eur(m.desde)} sin IVA · instalación aparte</small></span></a></li>`).join("");
+    const marcas = new Set(ms.map(m => m.marca)).size, cnt = document.querySelector("[data-rail-count]");
+    if (cnt) cnt.textContent = `${ms.length} cargadores de ${marcas} marcas, con IVA. Toca uno para ver versiones y ficha.`;
+    const btns = document.querySelectorAll("[data-rail]");
+    const step = () => { const li = rail.querySelector("li"); return li ? li.getBoundingClientRect().width + 16 : 300; };
+    const upd = () => { const max = rail.scrollWidth - rail.clientWidth - 2; btns.forEach(b => b.disabled = +b.dataset.rail < 0 ? rail.scrollLeft <= 2 : rail.scrollLeft >= max); };
+    btns.forEach(b => b.addEventListener("click", () => rail.scrollBy({ left: +b.dataset.rail * step() * 2, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })));
+    rail.addEventListener("scroll", upd, { passive: true }); addEventListener("resize", upd); upd();
+  }
+
+  /* ---------- Zona: el municipio cambia cada 2,4 s mientras se ve (quieto si se pide menos movimiento) ---------- */
+  const rot = document.querySelector(".rot");
+  if (rot && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const items = [...rot.children]; let i = 0, t = null;
+    const next = () => { items[i].classList.remove("on"); i = (i + 1) % items.length; items[i].classList.add("on"); };
+    new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting && !t) t = setInterval(next, 2400); if (!e.isIntersecting && t) { clearInterval(t); t = null; } })).observe(rot);
+  }
+
   /* ---------- Enlaces antiguos de la portada (#casa, #empresa) ---------- */
-  const OLD = { casa: "cargadores", empresa: "empresas" };
+  const OLD = { casa: "cargadores", empresa: "empresas", comunidad: "zona" };
   const fromHash = () => { const t = OLD[location.hash.slice(1)]; const el = t && $(t); if (el) el.scrollIntoView(); };
   addEventListener("hashchange", fromHash);
   if (OLD[location.hash.slice(1)]) addEventListener("load", () => setTimeout(fromHash, 60));
