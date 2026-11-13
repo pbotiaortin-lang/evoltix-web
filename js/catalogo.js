@@ -343,7 +343,7 @@
     cur.sel = { version: v ? v.nombre : "", codigo: v ? v.codigo : "", precio: v ? v.precio : null, fases: v ? v.fases : "",
       detalle: v ? [v.kw && v.kw !== "—" ? v.kw + " kW" : "", v.fases !== "—" ? v.fases : "", v.salida !== "—" ? v.salida : "", v.cable].filter(Boolean).join(" · ") : "" };
     $("#pd-total").textContent = v && v.precio ? conIva(v.precio) : "Consultar";
-    $("#pd-iva").textContent = v && v.precio ? "IVA incluido (" + eur(v.precio) + " sin IVA)" : "";
+    $("#pd-iva").textContent = v && v.precio ? "IVA incluido (" + eur(v.precio) + " sin IVA)" : "Te lo damos en el presupuesto";
     setImage(v && v.imagen);
     // Ficha técnica: la de la versión elegida si tiene una propia
     const doc = $("#pd-content .pd-doc"), f = (v && v.ficha) || cur.m.ficha;
@@ -379,7 +379,7 @@
       cur.cfg.acc.forEach(i => { const a = acc[i]; parts.push(a.nombre); a.precio == null ? pend = true : total += a.precio; });
       const txt = total ? eur(total) + (pend ? " + opciones a consultar" : "") : "Consultar";
       $("#pd-total").textContent = total ? conIva(total) + (pend ? " + opciones a consultar" : "") : "Consultar"; $("#pd-total").classList.toggle("sm", pend);
-      $("#pd-iva").textContent = total ? "IVA incluido (" + eur(total) + " sin IVA" + (pend ? ", sin las opciones a consultar" : "") + ")" : "";
+      $("#pd-iva").textContent = total ? "IVA incluido (" + eur(total) + " sin IVA" + (pend ? ", sin las opciones a consultar" : "") + ")" : "Te lo damos en el presupuesto";
       cur.sel = { version: `${m.modelo} ${cur.cfg.fase}`, codigo: "", precio: pend ? null : total, detalle: parts.join(" · "), precioTxt: total ? conIva(total) + (pend ? " + opciones a consultar" : "") + " IVA incl." : txt };
     };
     $("#pd-opts").onclick = e => {

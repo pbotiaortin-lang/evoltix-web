@@ -21,15 +21,15 @@
     });
   }
 
-  /* ---------- Barra de marcas: 6 marcas. Un logo opcional (Simon, Schneider Electric) solo se pide
-     cuando su marca ya tiene modelos en el catálogo, y si no existe no se muestra ---------- */
+  /* ---------- Barra de marcas: 6 marcas. El logo de Simon o Schneider Electric solo se pide cuando
+     su marca tiene modelos en el catálogo y está marcado como subido en config.js (logos) ---------- */
   const BRANDS = [
     { n: "Circutor", f: "circutor-logo.png", w: 452, h: 111 },
     { n: "Wallbox", f: "wallbox-logo.png", w: 223, h: 52, c: "wallbox" },
     { n: "Orbis", f: "orbis-logo.png", w: 222, h: 70, c: "orbis" },
     { n: "V2C", f: "v2c-logo.png", w: 400, h: 173 },
-    { n: "Simon", f: "simon-logo.png", opt: true },
-    { n: "Schneider Electric", f: "schneider-logo.png", opt: true }
+    { n: "Simon", f: "simon-logo.png", opt: "simon" },
+    { n: "Schneider Electric", f: "schneider-logo.png", opt: "schneider" }
   ];
   const tracks = document.querySelectorAll("[data-brands]");
   if (tracks.length) {
@@ -43,7 +43,8 @@
       t.classList.add("run");
     });
     paint(fixed);
-    const opt = BRANDS.filter(b => b.opt && hasModels(b.n));
+    const L = (window.EVX_CONFIG && window.EVX_CONFIG.logos) || {};
+    const opt = BRANDS.filter(b => b.opt && L[b.opt] && hasModels(b.n));
     if (opt.length) Promise.all(opt.map(probe)).then(r => { const ok = r.filter(Boolean); if (ok.length) paint(fixed.concat(ok)); });
   }
 
@@ -53,11 +54,11 @@
     const isAcc = m => m.tags.includes("accesorio"), isExt = m => m.tags.includes("exterior");
     const tomas = m => { const s = new Set(); [m.tomas, ...m.versiones.map(v => v.tomas)].forEach(t => (String(t || "").match(/\d+/g) || []).forEach(n => s.add(n))); return [...s].sort(); };
     const tipo = m => isExt(m) ? "Torre de exterior" : (t => t.length > 1 ? t.join(" o ") + " tomas" : t[0] === "1" ? "1 toma" : t[0] + " tomas")(tomas(m));
-    const ms = D.modelos.filter(m => !isAcc(m) && m.imagen && m.desde);
+    const ms = D.modelos.filter(m => !isAcc(m) && m.imagen);
     rail.innerHTML = ms.map(m => `<li><a class="pcard" href="catalogo.html#p-${esc(m.id)}">
       <span class="ph"><img src="${img(m.imagen)}" alt="" loading="lazy" width="500" height="500"></span>
       <small>${esc(m.marca)} · ${esc(tipo(m))}</small><b>${esc(m.modelo)}</b><span class="kw">${esc(m.potencias)} kW</span>
-      <span class="pr"><strong>${m.versiones.length > 1 ? "desde " : ""}${eurIva(m.desde)}</strong><small>IVA incluido · ${eur(m.desde)} sin IVA · instalación aparte</small></span></a></li>`).join("");
+      <span class="pr">${m.desde ? `<strong>${m.versiones.length > 1 ? "desde " : ""}${eurIva(m.desde)}</strong><small>IVA incluido · ${eur(m.desde)} sin IVA · instalación aparte</small>` : `<strong>Consultar precio</strong><small>Te lo damos en el presupuesto</small>`}</span></a></li>`).join("");
     const marcas = new Set(ms.map(m => m.marca)).size, cnt = document.querySelector("[data-rail-count]");
     if (cnt) cnt.textContent = `${ms.length} cargadores de ${marcas} marcas, con IVA. Toca uno para ver versiones y ficha.`;
     const btns = document.querySelectorAll("[data-rail]");
