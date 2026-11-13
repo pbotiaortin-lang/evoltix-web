@@ -33,7 +33,8 @@
     : m.tags.includes("empresa") || m.tags.includes("exterior"));
   // Filtro «Uso»: todos, cargadores de 1 toma, de 2 tomas, torres de exterior, pedestales y accesorios
   const inUso = (m, u) => u === "todos" ? true : u === "exterior" ? isExt(m) : u === "accesorio" ? isAcc(m) : !isAcc(m) && !isExt(m) && tomasOf(m).has(u);
-  const BRANDS = ["Circutor", "Wallbox", "Orbis", "V2C"];
+  // Marcas en el orden del filtro. Una marca solo aparece en el filtro cuando tiene al menos un modelo en catalogo-data.js
+  const BRANDS = ["Circutor", "Wallbox", "Orbis", "V2C", "Simon", "Schneider Electric"];
   const isAcc = m => m.tags.includes("accesorio");
   const isExt = m => m.tags.includes("exterior");
   // Tomas que ofrece un modelo, sumando las de todas sus versiones («1 o 2» cuenta para las dos)
@@ -168,10 +169,10 @@
   };
 
   /* ---------- Imágenes ---------- */
-  const LOGO = { Circutor: "circutor.webp", Wallbox: "wallbox.png", Orbis: "orbis.webp", V2C: "v2c.png" };
+  const LOGO = { Circutor: "circutor.webp", Wallbox: "wallbox.png", Orbis: "orbis.webp", V2C: "v2c.png", Simon: "simon-logo.png", "Schneider Electric": "schneider-logo.png" };
   function placeholder(m) {
     const f = LOGO[m.marca], src = f ? ((window.EVX_IMG && window.EVX_IMG["marcas/" + f]) || `img/marcas/${f}`) : "";
-    return `<div class="ph nophoto" role="img" aria-label="${esc(m.marca + " " + m.modelo)}: imagen no disponible">${isAcc(m) ? (/RFID/i.test(m.categoria) ? ICON.rfid : /Cable/i.test(m.categoria) ? ICON.cable : ICON.pole) : ICON.charger}${src ? `<img class="ph-logo ${esc(m.marca.toLowerCase())}" src="${esc(src)}" alt="" loading="lazy">` : ""}</div>`;
+    return `<div class="ph nophoto" role="img" aria-label="${esc(m.marca + " " + m.modelo)}: imagen no disponible">${isAcc(m) ? (/RFID/i.test(m.categoria) ? ICON.rfid : /Cable/i.test(m.categoria) ? ICON.cable : ICON.pole) : ICON.charger}${src ? `<img class="ph-logo" src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">` : ""}</div>`;
   }
   function media(m, file) {
     const f = file || m.imagen;
