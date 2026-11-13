@@ -321,10 +321,6 @@ main:focus-visible{outline:none}
 @media (hover:hover) and (pointer:fine){.biz-visual:hover img{transform:scale(1.025)}}
 
 /* Zona */
-.zona-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:32px 72px}
-.zona-list{list-style:none;margin:0;padding:0;columns:3 180px;column-gap:32px;font-size:1rem}
-.zona-list li{padding:7px 0;border-bottom:1px solid var(--line);break-inside:avoid}
-.zona-more{margin-top:20px;color:var(--muted)}
 
 /* Preguntas frecuentes */
 .faq-wrap{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:32px 72px;align-items:start}
@@ -659,7 +655,7 @@ a[href^="tel:"]{white-space:nowrap}
   .feat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:960px){
-  .hero-head,.svc,.aid2,.biz,.zona-grid,.faq-wrap,.contact .wrap,.page-hero .wrap,.doc,.sec-head.split,.cta-end{grid-template-columns:1fr}
+  .hero-head,.svc,.aid2,.biz,.faq-wrap,.contact .wrap,.page-hero .wrap,.doc,.sec-head.split,.cta-end{grid-template-columns:1fr}
   .svc .sec-head,.faq-wrap .sec-head,.contact-aside,.doc-main{display:grid;gap:40px;min-width:0}
   .contact-aside{position:static}
   .doc-aside{position:static}
@@ -734,7 +730,6 @@ a[href^="tel:"]{white-space:nowrap}
   .pd-acts{grid-template-columns:1fr}
   .cmp-view{padding:24px 16px}
   .faq-a{padding-right:0}
-  .zona-list{columns:2 140px}
   .footer .wrap{grid-template-columns:1fr}
   .seg{grid-template-columns:1fr}
 }
