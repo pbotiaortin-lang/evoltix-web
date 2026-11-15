@@ -300,7 +300,7 @@
         <div><div class="eyebrow">${esc(isAcc(m) ? m.marca + " · " + m.categoria : [m.marca, tomasTxt(m), usoTxt(m)].filter(Boolean).join(" · "))}</div><h2 id="pd-title" style="margin-top:8px">${esc(m.modelo)}</h2></div>
         <p class="pd-desc">${esc(m.descripcion)}</p>
         <div id="pd-opts" class="pd-opts"></div>
-        <div class="total" aria-live="polite"><div><small>${isAcc(m) ? "Precio" : "Precio del equipo"}</small><span class="amt" id="pd-total"></span><small><span id="pd-iva"></span>${isAcc(m) ? "" : " · la instalación se presupuesta aparte"}</small></div></div>
+        <div class="total" aria-live="polite"><div><small>${isAcc(m) ? "Precio" : m.versiones.every(v => !v.codigo) ? "Precio del equipo, desde" : "Precio del equipo"}</small><span class="amt" id="pd-total"></span><small><span id="pd-iva"></span>${isAcc(m) ? "" : " · la instalación se presupuesta aparte"}</small></div></div>
         <div class="pd-acts">
           <button class="btn btn-primary" type="button" id="pd-inst">${isAcc(m) ? "Añadir a mi solicitud" : "Solicitar precio con instalación"}</button>
           <button class="btn btn-secondary" type="button" id="pd-eq">${isAcc(m) ? "Comprar solo el accesorio" : "Quiero solo el equipo"}</button>
@@ -325,9 +325,11 @@
 
   function buildVersions(m) {
     const vs = m.versiones || [];
-    $("#pd-opts").innerHTML = `<div class="opt-group"><span class="lbl">Elige la versión <span class="hint">(${vs.length} · precios con IVA)</span></span><div class="vlist" role="radiogroup" aria-label="Versiones">${vs.map((v, i) => `
+    // Modelos genéricos: sin referencia; cable o base, largo y color se concretan en el presupuesto
+    const gen = !isAcc(m) && vs.every(v => !v.codigo);
+    $("#pd-opts").innerHTML = `<div class="opt-group"><span class="lbl">${vs.length > 1 ? "Elige la opción" : "Opción"} <span class="hint">(${gen ? "desde, con IVA" : "precios con IVA"})</span></span><div class="vlist" role="radiogroup" aria-label="Versiones">${vs.map((v, i) => `
       <label class="vrow"><input type="radio" name="pd-v" value="${i}" ${i === cheapest(vs) ? "checked" : ""}>
-        <span><span class="vn">${esc(v.nombre)}</span><br><span class="vs">${esc([v.codigo, v.kw && v.kw !== "—" ? v.kw + " kW" : "", v.fases !== "—" ? v.fases : "", v.salida !== "—" ? v.salida : "", v.cable].filter(Boolean).join(" · "))}</span></span>
+        <span><span class="vn">${esc(v.nombre)}</span><br><span class="vs">${esc(gen ? (v.salida !== "—" ? v.salida + " · se concreta en el presupuesto" : "") : [v.codigo, v.kw && v.kw !== "—" ? v.kw + " kW" : "", v.fases !== "—" ? v.fases : "", v.salida !== "—" ? v.salida : "", v.cable].filter(Boolean).join(" · "))}</span></span>
         <span class="vp">${v.precio ? conIva(v.precio) : "Consultar"}</span></label>`).join("")}</div></div>`;
     $("#pd-opts").onchange = updateVersion;
     updateVersion();
