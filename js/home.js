@@ -28,8 +28,8 @@
     { n: "Wallbox", f: "wallbox-logo.png", w: 223, h: 52, c: "wallbox" },
     { n: "Orbis", f: "orbis-logo.png", w: 222, h: 70, c: "orbis" },
     { n: "V2C", f: "v2c-logo.png", w: 400, h: 173 },
-    { n: "Simon", f: "simon-logo.png", opt: "simon" },
-    { n: "Schneider Electric", f: "schneider-logo.png", opt: "schneider" }
+    { n: "Simon", f: "simon-logo.png", w: 365, h: 120, c: "simon", opt: "simon" },
+    { n: "Schneider Electric", f: "schneider-logo.png", w: 406, h: 120, c: "schneider", opt: "schneider" }
   ];
   const tracks = document.querySelectorAll("[data-brands]");
   if (tracks.length) {

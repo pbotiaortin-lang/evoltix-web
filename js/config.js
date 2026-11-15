@@ -19,8 +19,8 @@ window.EVX_CONFIG = {
   zona: "Molina de Segura, Murcia y toda la Región de Murcia",
 
   // Logos de marca opcionales para la barra de marcas de la portada.
-  // Cuando subas img/marcas/simon-logo.png o img/marcas/schneider-logo.png, cambia su false por true.
-  logos: { simon: false, schneider: false },
+  // true = el logo está subido en img/marcas/ y sale en la barra de marcas (si la marca tiene modelos).
+  logos: { simon: true, schneider: true },
 
   // Dominio público (para el enlace de vuelta del correo)
   dominio: "https://evoltixbytecimelgroup.com"
