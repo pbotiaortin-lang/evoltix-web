@@ -44,8 +44,9 @@ Fotos de producto y logos de marca: siempre sobre placa clara (`--plate` #FFFFFF
 
 - **Héroe:** tarjeta menta con titular, frase, «Ver cargadores» + «Pedir presupuesto», tres garantías en chips y tres cargadores recortados en discos blancos con el precio «desde».
 - **Páginas interiores:** la misma tarjeta menta (`.phc`), con un disco de producto, una lista con iconos o cifras a la derecha. Legales: versión `.phc.slim`.
-- **Barra de marcas:** 6 marcas. Simon y Schneider Electric salen solas cuando su marca tiene modelos en `js/catalogo-data.js` y existe su logo (`img/marcas/simon-logo.png`, `img/marcas/schneider-logo.png`).
-- **Tarjetas de uso** (`.use`), **tarjetas con icono** (`.tiles`), **pasos** (`.steps`), **cifras** (`.nums`, `.fig`), **lista de comprobación** (`.chk`), **esquemas de línea** (`.s-*`: 1 frente a 2 tomas, garaje comunitario).
+- **Barra de marcas:** 6 marcas. Simon y Schneider Electric salen cuando su marca tiene modelos en `js/catalogo-data.js` y `EVX_CONFIG.logos` las marca como subidas.
+- **Catálogo genérico:** cada modelo solo distingue red, potencia y tomas, con precio «desde»; cable o base, largo y color se concretan en el presupuesto.
+- **Tarjetas de uso** (`.use`), **tarjetas con icono** (`.tiles`), **pasos** (`.steps`), **cifras** (`.nums`, `.fig`), **lista de comprobación** (`.chk`), **esquema de línea** del garaje comunitario (`.s-*`).
 - **Catálogo:** filtros Uso, Marca, Red y Prestaciones con contadores; tarjeta con precio con IVA grande y sin IVA al lado («instalación aparte»); ficha con versiones; comparador.
 - **Formulario:** teléfono o correo (basta uno), casilla de privacidad sin marcar y primera capa de protección de datos.
 
@@ -56,5 +57,6 @@ Fotos de producto y logos de marca: siempre sobre placa clara (`--plate` #FFFFFF
 
 ## Imágenes e iconos
 
-- Fotos de fabricante de los equipos. Nada de fotos de banco presentadas como instalaciones propias.
+- Fotos de fabricante de los equipos, en JPG de 500 × 500 px: producto recortado, centrado y ocupando el 82 % del lado mayor, sobre blanco puro (#FFFFFF), para que todas las tarjetas tengan el mismo tamaño óptico. Nada de fotos de banco presentadas como instalaciones propias.
+- Logos de marca en color, con altura óptica igualada por marca (clases en `.mq-track img`).
 - Iconos de trazo de 24px y 1,8 de grosor, en un único juego (`<symbol id="i-…">` en cada página), dentro de círculos menta.

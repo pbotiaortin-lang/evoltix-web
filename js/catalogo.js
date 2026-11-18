@@ -226,7 +226,7 @@
         ${acc ? "" : feats(m)}
         <div class="buy">${price}${cta}</div>
         ${acc ? "" : `<div class="foot">
-          <button class="lnk" type="button" data-open="${esc(m.id)}">${nv === 1 ? "Ver ficha" : `Ver ${nv} versiones`}<span aria-hidden="true"> →</span></button>
+          <button class="lnk" type="button" data-open="${esc(m.id)}">${nv === 1 ? "Ver ficha" : `Ver ${nv} opciones`}<span aria-hidden="true"> →</span></button>
           <label class="cmp-l"><input type="checkbox" data-cmp="${esc(m.id)}" ${cmp.has(m.id) ? "checked" : ""}> Comparar</label>
         </div>`}
       </div></article>`;
@@ -427,7 +427,7 @@
     const ms = [...cmp].map(byId); if (ms.length < 2) return;
     const yes = v => v && v !== "—" ? esc(v) : "—";
     const rows = [["Precio del equipo (con IVA)", m => m.desde ? "Desde " + conIva(m.desde) : "Consultar"], ["Potencia", m => esc(m.potencias) + " kW"], ["Red", m => esc(m.fases)], ["Tomas", m => esc(m.tomas)], ["Salida", m => esc(m.salida)], ["Conectividad", m => esc(m.conectividad)],
-      ["Balanceo dinámico", m => yes(m.detalle["Balanceo dinámico"])], ["Carga solar", m => yes(m.detalle["Integración solar"])], ["OCPP", m => yes(m.detalle["OCPP"])], ["RFID", m => yes(m.detalle["RFID"])], ["Contador MID", m => yes(m.detalle["Contador MID"])], ["Protecciones", m => yes(m.detalle["Protecciones integradas"])], ["Versiones", m => m.versiones.length]];
+      ["Balanceo dinámico", m => yes(m.detalle["Balanceo dinámico"])], ["Carga solar", m => yes(m.detalle["Integración solar"])], ["OCPP", m => yes(m.detalle["OCPP"])], ["RFID", m => yes(m.detalle["RFID"])], ["Contador MID", m => yes(m.detalle["Contador MID"])], ["Protecciones", m => yes(m.detalle["Protecciones integradas"])], ["Opciones", m => m.versiones.length]];
     $("#pd-content").innerHTML = `<div class="cmp-view"><div class="eyebrow">Comparar</div><h2 id="pd-title" style="margin:8px 0 16px">${ms.map(m => esc(m.modelo)).join(" · ")}</h2>
       <label class="cmp-only"><input type="checkbox" id="cmp-only"> Mostrar solo lo que cambia</label>
       <div class="tbl"><table class="cmp-t" style="--n:${ms.length}"><thead><tr><th scope="col"><span class="visually-hidden">Característica</span></th>${ms.map(m => `<th scope="col"><span class="rel-img">${media(m)}</span><small>${esc(m.marca)}</small>${esc(m.modelo)}</th>`).join("")}</tr></thead>

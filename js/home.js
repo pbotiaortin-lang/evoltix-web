@@ -24,7 +24,7 @@
   /* ---------- Barra de marcas: 6 marcas. El logo de Simon o Schneider Electric solo se pide cuando
      su marca tiene modelos en el catálogo y está marcado como subido en config.js (logos) ---------- */
   const BRANDS = [
-    { n: "Circutor", f: "circutor-logo.png", w: 452, h: 111 },
+    { n: "Circutor", f: "circutor-logo.png", w: 452, h: 111, c: "circutor" },
     { n: "Wallbox", f: "wallbox-logo.png", w: 223, h: 52, c: "wallbox" },
     { n: "Orbis", f: "orbis-logo.png", w: 222, h: 70, c: "orbis" },
     { n: "V2C", f: "v2c-logo.png", w: 400, h: 173 },
@@ -60,7 +60,7 @@
       <small>${esc(m.marca)} · ${esc(tipo(m))}</small><b>${esc(m.modelo)}</b><span class="kw">${esc(m.potencias)} kW</span>
       <span class="pr">${m.desde ? `<strong>${m.versiones.length > 1 ? "desde " : ""}${eurIva(m.desde)}</strong><small>IVA incluido · ${eur(m.desde)} sin IVA · instalación aparte</small>` : `<strong>Consultar precio</strong><small>Te lo damos en el presupuesto</small>`}</span></a></li>`).join("");
     const marcas = new Set(ms.map(m => m.marca)).size, cnt = document.querySelector("[data-rail-count]");
-    if (cnt) cnt.textContent = `${ms.length} cargadores de ${marcas} marcas, con IVA. Toca uno para ver versiones y ficha.`;
+    if (cnt) cnt.textContent = `${ms.length} cargadores de ${marcas} marcas, con IVA. Toca uno para ver opciones y ficha.`;
     const btns = document.querySelectorAll("[data-rail]");
     const step = () => { const li = rail.querySelector("li"); return li ? li.getBoundingClientRect().width + 16 : 300; };
     const upd = () => { const max = rail.scrollWidth - rail.clientWidth - 2; btns.forEach(b => b.disabled = +b.dataset.rail < 0 ? rail.scrollLeft <= 2 : rail.scrollLeft >= max); };
