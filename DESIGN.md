@@ -22,7 +22,7 @@ Web de una instaladora eléctrica de la Región de Murcia que vende, instala y m
 | `--ok` / `--err` | #00705F / #B42318 | #5FE0CB / #FF8A80 | Formulario |
 
 Contraste: todo el texto pasa WCAG AA en claro y oscuro (se comprueba con Playwright en 360, 390, 768, 1024 y 1440 px).
-Fotos de producto y logos de marca: siempre sobre placa clara (`--plate` #FFFFFF; barra de marcas #F3F6F9), también en oscuro.
+Fotos de producto y logos de marca: siempre sobre placa clara (`--plate` #FFFFFF en claro, #EEF2F6 en oscuro, con `mix-blend-mode: multiply` en las fotos; barra de marcas #F3F6F9).
 
 ## Tipografía
 

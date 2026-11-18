@@ -29,7 +29,7 @@
   --bg:#0A1630; --surface:#0F1F3E; --surface-2:#14264A; --card:#0F1F3E;
   --ink:#E8EEF8; --muted:#B5C0D5; --soft:#9BA8C0; --line:#22345A; --line-strong:#34497A;
   --head:#E3ECFF; --brand:#E3ECFF; --accent:#2FD3BB; --accent-h:#5FE0CB; --on-accent:#06213F;
-  --link:#5FE0CB; --tint:#0E2F37; --mint:#0E2F37; --mint-2:#1A4A52; --teal:#2FD3BB; --plate:#FFFFFF; --green:#2FD3BB; --green-soft:#0E2F37;
+  --link:#5FE0CB; --tint:#0E2F37; --mint:#0E2F37; --mint-2:#1A4A52; --teal:#2FD3BB; --plate:#EEF2F6; --green:#2FD3BB; --green-soft:#0E2F37;
   --band:#102A5C; --band-2:#163574; --band-fg:#E8EEF8; --band-muted:#B5C0D5; --band-line:rgb(255 255 255 / .12); --band-accent:#5FE0CB; --band-cta:#2FD3BB; --band-cta-fg:#06213F; --band-cta-h:#5FE0CB;
   --ok:#5FE0CB; --ok-bg:#0E2F37; --err:#FF8A80; --err-bg:#3A1514; --focus:#5FE0CB;
   --shadow:0 1px 2px rgb(0 0 0 / .3),0 16px 36px -18px rgb(0 0 0 / .6); color-scheme:dark}}
@@ -37,7 +37,7 @@
   --bg:#0A1630; --surface:#0F1F3E; --surface-2:#14264A; --card:#0F1F3E;
   --ink:#E8EEF8; --muted:#B5C0D5; --soft:#9BA8C0; --line:#22345A; --line-strong:#34497A;
   --head:#E3ECFF; --brand:#E3ECFF; --accent:#2FD3BB; --accent-h:#5FE0CB; --on-accent:#06213F;
-  --link:#5FE0CB; --tint:#0E2F37; --mint:#0E2F37; --mint-2:#1A4A52; --teal:#2FD3BB; --plate:#FFFFFF; --green:#2FD3BB; --green-soft:#0E2F37;
+  --link:#5FE0CB; --tint:#0E2F37; --mint:#0E2F37; --mint-2:#1A4A52; --teal:#2FD3BB; --plate:#EEF2F6; --green:#2FD3BB; --green-soft:#0E2F37;
   --band:#102A5C; --band-2:#163574; --band-fg:#E8EEF8; --band-muted:#B5C0D5; --band-line:rgb(255 255 255 / .12); --band-accent:#5FE0CB; --band-cta:#2FD3BB; --band-cta-fg:#06213F; --band-cta-h:#5FE0CB;
   --ok:#5FE0CB; --ok-bg:#0E2F37; --err:#FF8A80; --err-bg:#3A1514; --focus:#5FE0CB;
   --shadow:0 1px 2px rgb(0 0 0 / .3),0 16px 36px -18px rgb(0 0 0 / .6); color-scheme:dark}
@@ -804,3 +804,5 @@ a[href^="tel:"]{white-space:nowrap}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 .grid-nojs{grid-column:1/-1;font-size:var(--t5);color:var(--ink)}.grid-nojs ul{margin:12px 0 0;padding-left:20px;display:grid;gap:8px}
+/* Fotos de producto (JPG sobre blanco): se funden con la placa; en oscuro la placa es gris muy claro, no blanco puro */
+.ph-disc img,.card .media img,.pd-media img,.rel-img img,.disc img,.use .ph img,.pcard .ph img,.pd-img img{mix-blend-mode:multiply}
