@@ -23,12 +23,27 @@
     cable: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="12" y="34" width="20" height="26" rx="5"/><rect x="64" y="34" width="20" height="26" rx="5"/><path d="M32 47c12 0 10 22 22 22s4-22 10-22"/></svg>',
     pole: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="36" y="8" width="24" height="18" rx="3"/><path d="M48 26v58M30 86h36"/></svg>'
   };
-  const USO = { domestico: "Vivienda", comunitario: "Garaje comunitario", empresa: "Empresa", poste: "Poste exterior", accesorio: "Accesorio" };
-  const BRANDS = ["Circutor", "Wallbox", "Orbis", "V2C"];
+  // Ámbito (casa y garaje comunitario, o empresa): lo elige el cliente en la portada; en el catálogo llega por enlace (#uso-casa, #uso-empresa).
+  // Los enlaces antiguos (#uso-domestico, #uso-comunitario) llevan a casa y garaje comunitario.
+  const AMBITO = { casa: "Casa y garaje comunitario", empresa: "Empresa" };
+  const ALIAS_AMB = { domestico: "casa", comunitario: "casa", vivienda: "casa", comunidad: "casa" };
+  const ALIAS_USO = { poste: "exterior", torre: "exterior", torres: "exterior", accesorios: "accesorio" };
+  const inAmbito = m => state.ambito === "todos" || isAcc(m) || (state.ambito === "casa"
+    ? m.tags.includes("domestico") || m.tags.includes("comunitario")
+    : m.tags.includes("empresa") || m.tags.includes("exterior"));
+  // Filtro «Uso»: todos, cargadores de 1 toma, de 2 tomas, torres de exterior, pedestales y accesorios
+  const inUso = (m, u) => u === "todos" ? true : u === "exterior" ? isExt(m) : u === "accesorio" ? isAcc(m) : !isAcc(m) && !isExt(m) && tomasOf(m).has(u);
+  // Marcas en el orden del filtro. Una marca solo aparece en el filtro cuando tiene al menos un modelo en catalogo-data.js
+  const BRANDS = ["Circutor", "Wallbox", "Orbis", "V2C", "Simon", "Schneider Electric"];
   const isAcc = m => m.tags.includes("accesorio");
+  const isExt = m => m.tags.includes("exterior");
+  // Tomas que ofrece un modelo, sumando las de todas sus versiones («1 o 2» cuenta para las dos)
+  const tomasOf = m => { const s = new Set(); [m.tomas, ...m.versiones.map(v => v.tomas)].forEach(t => (String(t || "").match(/\d+/g) || []).forEach(n => s.add(n))); return s; };
+  const tomasTxt = m => { const t = [...tomasOf(m)].sort(); return t.length ? (t.length > 1 ? t.join(" o ") + " tomas" : t[0] === "1" ? "1 toma" : t[0] + " tomas") : ""; };
+  const usoTxt = m => isExt(m) ? "Torre de exterior" : m.tags.includes("domestico") || m.tags.includes("comunitario") ? (m.tags.includes("empresa") ? "Casa · comunidad · empresa" : "Casa y comunidad") : m.tags.includes("empresa") ? "Empresa" : "";
   const byId = id => DATA.modelos.find(x => x.id === id);
 
-  const state = { uso: "todos", marca: "todas", fase: "todas", extra: new Set(), orden: "rel", q: "" };
+  const state = { ambito: "todos", uso: "todos", marca: "todas", fase: "todas", extra: new Set(), orden: "rel", q: "" };
   const norm = t => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const hay = m => norm([m.marca, m.modelo, m.categoria, m.descripcion, m.conectividad, ...m.versiones.map(v => v.nombre + " " + v.codigo)].join(" "));
   const cmp = new Set();
@@ -36,9 +51,8 @@
   /* ---------- Filtros ---------- */
   function matchExcept(m, skip) {
     if (state.q && !norm(state.q).split(/\s+/).every(w => hay(m).includes(w))) return false;
-    if (skip !== "uso") {
-      if (state.uso === "todos" ? false : !m.tags.includes(state.uso)) return false;
-    }
+    if (!inAmbito(m)) return false;
+    if (skip !== "uso" && !inUso(m, state.uso)) return false;
     if (skip !== "marca" && state.marca !== "todas" && m.marca !== state.marca) return false;
     if (skip !== "fase") {
       if (state.fase === "mono" && !/Mono/.test(m.fases)) return false;
@@ -52,7 +66,7 @@
   function countFor(key, v) {
     return DATA.modelos.filter(m => {
       if (!matchExcept(m, key)) return false;
-      if (key === "uso") return v === "todos" ? !isAcc(m) || state.uso === "accesorio" : m.tags.includes(v);
+      if (key === "uso") return v === "todos" ? !isAcc(m) || state.uso === "accesorio" : inUso(m, v);
       if (key === "marca") return v === "todas" || m.marca === v;
       if (key === "fase") return v === "todas" || (v === "mono" ? /Mono/.test(m.fases) : /Tri/.test(m.fases));
       if (key === "extra") return !!m[v];
@@ -67,7 +81,32 @@
       let c = b.querySelector(".n"); if (!c) { c = document.createElement("span"); c.className = "n"; b.insertBefore(c, b.querySelector(".ck")); }
       c.textContent = n;
       b.classList.toggle("zero", n === 0 && b.getAttribute("aria-pressed") !== "true");
+      // Con un ámbito elegido, las opciones que no tienen ningún equipo (p. ej. torres en casa) no se muestran
+      b.hidden = key === "uso" && state.ambito !== "todos" && n === 0 && b.getAttribute("aria-pressed") !== "true";
     });
+    // La fila de usos (móvil y tablet) copia el estado, los contadores y lo que se oculta del filtro «Uso»
+    document.querySelectorAll("[data-uc]").forEach(u => {
+      const b = document.querySelector(`[data-filter="uso"] [data-v="${u.dataset.uc}"]`); if (!b) return;
+      u.setAttribute("aria-pressed", b.getAttribute("aria-pressed")); u.hidden = b.hidden;
+      u.querySelector(".n").textContent = b.querySelector(".n") ? b.querySelector(".n").textContent : "";
+    });
+    // El botón elegido siempre a la vista dentro de la fila (sin mover la página)
+    const row = document.querySelector(".uso-chips"), on = row && row.querySelector('[aria-pressed="true"]');
+    if (on && row.scrollWidth > row.clientWidth) {
+      const l = on.offsetLeft - row.offsetLeft, r = l + on.offsetWidth;
+      if (l < row.scrollLeft + 16 || r > row.scrollLeft + row.clientWidth - 16) row.scrollLeft = Math.max(0, l - 16);
+    }
+  }
+  // En móvil y tablet los filtros van en un panel; el uso (1 toma, 2 tomas…) es la decisión principal, así que va también en una fila de botones encima de los resultados
+  const UC = { todos: "Todos", 1: "1 toma · un coche", 2: "2 tomas · dos coches", exterior: "Torres de exterior", accesorio: "Pedestales y accesorios" };
+  function buildUsoChips() {
+    const s = document.querySelector(".cat-search"); if (!s || document.querySelector(".uso-chips")) return;
+    const row = document.createElement("div");
+    row.className = "uso-chips"; row.setAttribute("role", "group"); row.setAttribute("aria-label", "Tipo de cargador");
+    row.innerHTML = [...document.querySelectorAll('[data-filter="uso"] .fopt')].map(b =>
+      `<button type="button" class="uc" data-uc="${esc(b.dataset.v)}" aria-pressed="false">${esc(UC[b.dataset.v] || b.textContent)}<span class="n"></span></button>`).join("");
+    s.after(row);
+    row.addEventListener("click", e => { const u = e.target.closest("[data-uc]"); if (u) window.EVX_setUso(u.dataset.uc); });
   }
 
   function buildFilters() {
@@ -97,6 +136,7 @@
       const [k, v] = b.dataset.clear.split(":");
       if (k === "all") return resetFilters();
       if (k === "q") { state.q = ""; if (q) q.value = ""; }
+      else if (k === "ambito") state.ambito = "todos";
       else if (k === "extra") { state.extra.delete(v); document.querySelector(`[data-filter="extra"] [data-v="${v}"]`).setAttribute("aria-pressed", "false"); }
       else { state[k] = k === "uso" ? "todos" : "todas"; document.querySelectorAll(`[data-filter="${k}"] .fopt`).forEach(c => c.setAttribute("aria-pressed", ["todos", "todas"].includes(c.dataset.v))); }
       render();
@@ -105,20 +145,34 @@
     if (ft) ft.addEventListener("click", () => { const o = $("#filters").classList.toggle("open"); ft.setAttribute("aria-expanded", o); document.body.style.overflow = o ? "hidden" : ""; });
     document.querySelectorAll("[data-f-close]").forEach(b => b.addEventListener("click", () => {
       $("#filters").classList.remove("open"); if (ft) { ft.setAttribute("aria-expanded", false); ft.focus({ preventScroll: true }); }
-      document.body.style.overflow = ""; $("#grid").scrollIntoView({ block: "start", behavior: "instant" });
+      document.body.style.overflow = ""; (document.querySelector(".uso-chips") || $("#grid")).scrollIntoView({ block: "start", behavior: "instant" });
     }));
   }
-  window.EVX_setUso = function (uso) {
-    state.uso = uso;
-    document.querySelectorAll('[data-filter="uso"] .fopt').forEach(c => c.setAttribute("aria-pressed", c.dataset.v === uso));
+  const pressUso = () => document.querySelectorAll('[data-filter="uso"] .fopt').forEach(c => c.setAttribute("aria-pressed", c.dataset.v === state.uso));
+  window.EVX_setUso = function (uso, ambito) {
+    uso = ALIAS_USO[uso] || uso;
+    state.uso = document.querySelector(`[data-filter="uso"] [data-v="${uso}"]`) ? uso : "todos";
+    if (ambito !== undefined) state.ambito = AMBITO[ambito] ? ambito : "todos";
+    pressUso(); render();
+  };
+  // Ámbito sin tocar los demás filtros (los botones de la portada)
+  window.EVX_setAmbito = function (ambito) {
+    state.ambito = AMBITO[ambito] ? ambito : "todos";
+    if (!DATA.modelos.some(m => match(m) && !isAcc(m))) { state.uso = "todos"; pressUso(); }
     render();
+  };
+  // Enlace #uso-xxx: casa, empresa (ámbito, con un uso opcional detrás: #uso-casa-2), 1, 2, exterior, accesorio
+  const fromUsoHash = h => {
+    const parts = h.split("-"), a = ALIAS_AMB[parts[0]] || parts[0];
+    if (AMBITO[a]) window.EVX_setUso(parts[1] || "todos", a);
+    else window.EVX_setUso(parts[0], "todos");
   };
 
   /* ---------- Imágenes ---------- */
-  const LOGO = { Circutor: "circutor.webp", Wallbox: "wallbox.png", Orbis: "orbis.webp", V2C: "v2c.png" };
+  const LOGO = { Circutor: "circutor.webp", Wallbox: "wallbox.png", Orbis: "orbis.webp", V2C: "v2c.png", Simon: "simon-logo.png", "Schneider Electric": "schneider-logo.png" };
   function placeholder(m) {
     const f = LOGO[m.marca], src = f ? ((window.EVX_IMG && window.EVX_IMG["marcas/" + f]) || `img/marcas/${f}`) : "";
-    return `<div class="ph nophoto" role="img" aria-label="${esc(m.marca + " " + m.modelo)}: imagen no disponible">${isAcc(m) ? (/RFID/i.test(m.categoria) ? ICON.rfid : /Cable/i.test(m.categoria) ? ICON.cable : ICON.pole) : ICON.charger}${src ? `<img class="ph-logo ${esc(m.marca.toLowerCase())}" src="${esc(src)}" alt="" loading="lazy">` : ""}</div>`;
+    return `<div class="ph nophoto" role="img" aria-label="${esc(m.marca + " " + m.modelo)}: imagen no disponible">${isAcc(m) ? (/RFID/i.test(m.categoria) ? ICON.rfid : /Cable/i.test(m.categoria) ? ICON.cable : ICON.pole) : ICON.charger}${src ? `<img class="ph-logo" src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">` : ""}</div>`;
   }
   function media(m, file) {
     const f = file || m.imagen;
@@ -144,7 +198,7 @@
       const tipo = ((m.categoria || "").split("·")[1] || "Accesorio").trim();
       return [tipo, comp.length ? "Para " + comp.join(", ") : "", m.tomas && !["—", "1"].includes(m.tomas) ? m.tomas + " equipos" : ""].filter(Boolean);
     }
-    return [m.fases, shortOut(m.salida), m.tomas && m.tomas !== "1" ? m.tomas + " tomas" : ""].filter(Boolean);
+    return [tomasTxt(m), m.fases, shortOut(m.salida)].filter(Boolean);
   }
   /* Se mantiene para la ficha y el comparador */
   function specRows(m) {
@@ -155,16 +209,16 @@
       <dt>Salida</dt><dd>${esc(salida)}</dd>`;
   }
   function card(m) {
-    const acc = isAcc(m), usos = m.tags.map(t => USO[t]).filter(Boolean), uso = usos[0] || "";
+    const acc = isAcc(m), uso = usoTxt(m);
     const nv = m.versiones.length, name = esc(m.marca + " " + m.modelo);
     const price = m.desde
-      ? `<div class="price"><span class="from">${acc ? "Desde" : "Equipo desde"}</span><span class="amt">${conIva(m.desde)}</span><span class="iva">IVA incluido · ${eur(m.desde)} sin IVA</span></div>`
+      ? `<div class="price"><span class="from">${acc ? "Desde" : "Equipo desde"}</span><span class="amt">${conIva(m.desde)}</span><span class="iva">IVA incluido · ${eur(m.desde)} sin IVA${acc ? "" : " · instalación aparte"}</span></div>`
       : `<div class="price ask"><span class="from">${acc ? "Precio" : "Precio del equipo"}</span><span class="amt">Consultar</span><span class="iva">Te lo indicamos en el presupuesto</span></div>`;
     const cta = acc
       ? `<button class="btn btn-secondary btn-sm" type="button" data-open="${esc(m.id)}">Ver detalles</button>`
       : `<button class="btn btn-primary btn-sm" type="button" data-quote="${esc(m.id)}">${m.desde ? "Precio con instalación" : "Pedir precio"}</button>`;
     return `<article class="card${acc ? " acc" : ""}${m.imagen ? "" : " no-img"}">
-      <button class="media" type="button" data-open="${esc(m.id)}" aria-label="Ver ficha de ${name}">${media(m)}${uso && !acc ? `<span class="badge">${esc(uso)}</span>` : ""}</button>
+      <button class="media" type="button" data-open="${esc(m.id)}" aria-label="Ver ficha de ${name}">${media(m)}${isExt(m) ? `<span class="badge">${esc(uso)}</span>` : ""}</button>
       <div class="body">
         <div class="ttl"><div class="brand">${esc(m.marca)}</div><h3><button type="button" class="t-link" data-open="${esc(m.id)}">${esc(m.modelo)}</button></h3></div>
         ${acc ? "" : `<p class="kw"><b>${esc(m.potencias)}</b> kW</p>`}
@@ -172,7 +226,7 @@
         ${acc ? "" : feats(m)}
         <div class="buy">${price}${cta}</div>
         ${acc ? "" : `<div class="foot">
-          <button class="lnk" type="button" data-open="${esc(m.id)}">${nv === 1 ? "Ver ficha" : `Ver ${nv} versiones`}<span aria-hidden="true"> →</span></button>
+          <button class="lnk" type="button" data-open="${esc(m.id)}">${nv === 1 ? "Ver ficha" : `Ver ${nv} opciones`}<span aria-hidden="true"> →</span></button>
           <label class="cmp-l"><input type="checkbox" data-cmp="${esc(m.id)}" ${cmp.has(m.id) ? "checked" : ""}> Comparar</label>
         </div>`}
       </div></article>`;
@@ -184,8 +238,18 @@
     if (state.orden === "asc") list = [...list].sort((a, b) => isAcc(a) - isAcc(b) || (a.desde ?? 1e9) - (b.desde ?? 1e9));
     if (state.orden === "desc") list = [...list].sort((a, b) => isAcc(a) - isAcc(b) || (b.desde ?? -1) - (a.desde ?? -1));
     const ch = list.filter(m => !isAcc(m)), ac = list.filter(isAcc);
-    let html = ch.map(card).join("");
-    if (ac.length && state.uso !== "accesorio") html += `<div class="grid-sep"><span class="eyebrow">Pedestales y accesorios</span><p>Pedestales para instalar en suelo, tarjetas de acceso y cables de carga.</p></div>`;
+    const sep = (t, p) => `<div class="grid-sep"><span class="eyebrow">${t}</span><p>${p}</p></div>`;
+    const sec = (items, t, p, show) => items.length ? (show ? sep(t, p) : "") + items.map(card).join("") : "";
+    const wall = ch.filter(m => !isExt(m)), ext = ch.filter(isExt);
+    let html = "";
+    if (state.uso === "todos") {
+      // En «Todos» se agrupan por tomas; los que tienen versiones de 1 y de 2 tomas van con los de 2
+      const one = wall.filter(m => !tomasOf(m).has("2")), two = wall.filter(m => tomasOf(m).has("2"));
+      html += sec(one, "Cargadores de 1 toma · un coche", "En tu garaje o en tu plaza del garaje comunitario: los mismos modelos valen para los dos casos.", true);
+      html += sec(two, "Cargadores de 2 tomas · dos coches a la vez", "Dos coches en casa, dos plazas del garaje o puestos de empresa con un solo equipo.", true);
+    } else html += wall.map(card).join("");
+    html += sec(ext, "Torres de exterior", "Postes de suelo para aparcamientos al aire libre: empresas, comercios, hoteles y vía pública.", wall.length > 0);
+    if (ac.length && state.uso !== "accesorio") html += sep("Pedestales y accesorios", "Pedestales para instalar en suelo, tarjetas de acceso y cables de carga.");
     html += ac.map(card).join("");
     $("#grid").innerHTML = list.length ? html :
       `<div class="empty"><b>${state.q ? `No encontramos «${esc(state.q)}»` : "Ningún cargador cumple todos esos filtros"}</b><p>Prueba con menos filtros o pregúntanos directamente: te decimos qué modelo encaja.</p><div class="empty-acts"><button class="btn btn-secondary btn-sm" type="button" id="reset-f">Quitar filtros</button><a class="btn btn-primary btn-sm" href="tel:+34671445832">Llamar al 671 44 58 32</a></div></div>`;
@@ -193,13 +257,15 @@
     const r = $("#reset-f"); if (r) r.onclick = resetFilters;
     paintCounts(); chipsOn(); syncCmp();
     const fa = $("#f-apply"); if (fa) fa.textContent = list.length ? `Ver ${ch.length} ${ch.length === 1 ? "cargador" : "cargadores"}${ac.length ? " y " + ac.length + " accesorios" : ""}` : "Sin resultados: cambia los filtros";
-    const ftb = document.querySelector(".f-toggle"); if (ftb) { const n = (state.uso !== "todos") + (state.marca !== "todas") + (state.fase !== "todas") + state.extra.size; ftb.textContent = n ? `Filtros (${n})` : "Filtros"; }
+    const ftb = document.querySelector(".f-toggle"); if (ftb) { const ucOn = document.querySelector(".uso-chips") && getComputedStyle(document.querySelector(".uso-chips")).display !== "none", n = (!ucOn && state.uso !== "todos") + (state.marca !== "todas") + (state.fase !== "todas") + state.extra.size; ftb.textContent = n ? `Filtros (${n})` : "Filtros"; }
   }
   function chipsOn() {
     const box = $("#chips-on"); if (!box) return;
     const lab = (k, v) => (document.querySelector(`[data-filter="${k}"] [data-v="${v}"] .t`) || {}).textContent || v;
     const c = [];
     if (state.q) c.push(["q:", `«${state.q}»`]);
+    // El ámbito sale como filtro quitable solo en el catálogo (en la portada lo marcan las dos tarjetas)
+    if (state.ambito !== "todos" && !document.querySelector("[data-ambito]")) c.push(["ambito:todos", AMBITO[state.ambito]]);
     if (state.uso !== "todos") c.push(["uso:" + state.uso, lab("uso", state.uso)]);
     if (state.marca !== "todas") c.push(["marca:" + state.marca, state.marca]);
     if (state.fase !== "todas") c.push(["fase:" + state.fase, lab("fase", state.fase)]);
@@ -208,6 +274,7 @@
   }
   function resetFilters() {
     state.q = ""; const qi = $("#q"); if (qi) qi.value = "";
+    if (!document.querySelector("[data-ambito]")) state.ambito = "todos";
     Object.assign(state, { uso: "todos", marca: "todas", fase: "todas", extra: new Set() });
     document.querySelectorAll("[data-filter] .fopt").forEach(c => c.setAttribute("aria-pressed", ["todos", "todas"].includes(c.dataset.v)));
     render();
@@ -230,10 +297,10 @@
         ${m.ficha ? `<a class="pd-doc" href="${/^https?:/.test(m.ficha) ? esc(m.ficha) : "docs/" + esc(m.ficha)}" target="_blank" rel="noopener">${ICON.doc}<span><b>Ficha técnica del fabricante</b><small>PDF · ${esc(m.marca)}</small></span></a>` : ""}
       </div>
       <div class="pd-body">
-        <div><div class="eyebrow">${esc(m.marca)} · ${esc(m.categoria)}</div><h2 id="pd-title" style="margin-top:8px">${esc(m.modelo)}</h2></div>
+        <div><div class="eyebrow">${esc(isAcc(m) ? m.marca + " · " + m.categoria : [m.marca, tomasTxt(m), usoTxt(m)].filter(Boolean).join(" · "))}</div><h2 id="pd-title" style="margin-top:8px">${esc(m.modelo)}</h2></div>
         <p class="pd-desc">${esc(m.descripcion)}</p>
         <div id="pd-opts" class="pd-opts"></div>
-        <div class="total" aria-live="polite"><div><small>${isAcc(m) ? "Precio" : "Precio del equipo"}</small><span class="amt" id="pd-total"></span><small><span id="pd-iva"></span>${isAcc(m) ? "" : " · la instalación se presupuesta aparte"}</small></div></div>
+        <div class="total" aria-live="polite"><div><small>${isAcc(m) ? "Precio" : m.versiones.every(v => !v.codigo) ? "Precio del equipo, desde" : "Precio del equipo"}</small><span class="amt" id="pd-total"></span><small><span id="pd-iva"></span>${isAcc(m) ? "" : " · la instalación se presupuesta aparte"}</small></div></div>
         <div class="pd-acts">
           <button class="btn btn-primary" type="button" id="pd-inst">${isAcc(m) ? "Añadir a mi solicitud" : "Solicitar precio con instalación"}</button>
           <button class="btn btn-secondary" type="button" id="pd-eq">${isAcc(m) ? "Comprar solo el accesorio" : "Quiero solo el equipo"}</button>
@@ -258,9 +325,11 @@
 
   function buildVersions(m) {
     const vs = m.versiones || [];
-    $("#pd-opts").innerHTML = `<div class="opt-group"><span class="lbl">Elige la versión <span class="hint">(${vs.length} · precios con IVA)</span></span><div class="vlist" role="radiogroup" aria-label="Versiones">${vs.map((v, i) => `
+    // Modelos genéricos: sin referencia; cable o base, largo y color se concretan en el presupuesto
+    const gen = !isAcc(m) && vs.every(v => !v.codigo);
+    $("#pd-opts").innerHTML = `<div class="opt-group"><span class="lbl">${vs.length > 1 ? "Elige la opción" : "Opción"} <span class="hint">(${gen ? "desde, con IVA" : "precios con IVA"})</span></span><div class="vlist" role="radiogroup" aria-label="Versiones">${vs.map((v, i) => `
       <label class="vrow"><input type="radio" name="pd-v" value="${i}" ${i === cheapest(vs) ? "checked" : ""}>
-        <span><span class="vn">${esc(v.nombre)}</span><br><span class="vs">${esc([v.codigo, v.kw && v.kw !== "—" ? v.kw + " kW" : "", v.fases !== "—" ? v.fases : "", v.salida !== "—" ? v.salida : "", v.cable].filter(Boolean).join(" · "))}</span></span>
+        <span><span class="vn">${esc(v.nombre)}</span><br><span class="vs">${esc(gen ? (v.salida !== "—" ? v.salida + " · se concreta en el presupuesto" : "") : [v.codigo, v.kw && v.kw !== "—" ? v.kw + " kW" : "", v.fases !== "—" ? v.fases : "", v.salida !== "—" ? v.salida : "", v.cable].filter(Boolean).join(" · "))}</span></span>
         <span class="vp">${v.precio ? conIva(v.precio) : "Consultar"}</span></label>`).join("")}</div></div>`;
     $("#pd-opts").onchange = updateVersion;
     updateVersion();
@@ -276,7 +345,7 @@
     cur.sel = { version: v ? v.nombre : "", codigo: v ? v.codigo : "", precio: v ? v.precio : null, fases: v ? v.fases : "",
       detalle: v ? [v.kw && v.kw !== "—" ? v.kw + " kW" : "", v.fases !== "—" ? v.fases : "", v.salida !== "—" ? v.salida : "", v.cable].filter(Boolean).join(" · ") : "" };
     $("#pd-total").textContent = v && v.precio ? conIva(v.precio) : "Consultar";
-    $("#pd-iva").textContent = v && v.precio ? "IVA incluido (" + eur(v.precio) + " sin IVA)" : "";
+    $("#pd-iva").textContent = v && v.precio ? "IVA incluido (" + eur(v.precio) + " sin IVA)" : "Te lo damos en el presupuesto";
     setImage(v && v.imagen);
     // Ficha técnica: la de la versión elegida si tiene una propia
     const doc = $("#pd-content .pd-doc"), f = (v && v.ficha) || cur.m.ficha;
@@ -312,7 +381,7 @@
       cur.cfg.acc.forEach(i => { const a = acc[i]; parts.push(a.nombre); a.precio == null ? pend = true : total += a.precio; });
       const txt = total ? eur(total) + (pend ? " + opciones a consultar" : "") : "Consultar";
       $("#pd-total").textContent = total ? conIva(total) + (pend ? " + opciones a consultar" : "") : "Consultar"; $("#pd-total").classList.toggle("sm", pend);
-      $("#pd-iva").textContent = total ? "IVA incluido (" + eur(total) + " sin IVA" + (pend ? ", sin las opciones a consultar" : "") + ")" : "";
+      $("#pd-iva").textContent = total ? "IVA incluido (" + eur(total) + " sin IVA" + (pend ? ", sin las opciones a consultar" : "") + ")" : "Te lo damos en el presupuesto";
       cur.sel = { version: `${m.modelo} ${cur.cfg.fase}`, codigo: "", precio: pend ? null : total, detalle: parts.join(" · "), precioTxt: total ? conIva(total) + (pend ? " + opciones a consultar" : "") + " IVA incl." : txt };
     };
     $("#pd-opts").onclick = e => {
@@ -337,6 +406,9 @@
       detalle: sel ? sel.detalle : `${m.potencias} kW · ${m.fases}`, precio, modalidad,
       fases: (sel && sel.fases) || (sel && /Tri/.test(sel.version || "") ? "Tri" : sel && /Mono/.test(sel.version || "") ? "Mono" : m.fases)
     });
+    // Una torre de exterior deja elegido el tipo de ubicación en el formulario
+    const u = document.getElementById("ubicacion");
+    if (u && isExt(m) && [...u.options].some(o => o.text === "Aparcamiento exterior / poste")) u.value = "Aparcamiento exterior / poste";
     if (dlg().open) dlg().close();
     document.getElementById("contacto").scrollIntoView({ behavior: "smooth" });
   }
@@ -355,14 +427,15 @@
     const ms = [...cmp].map(byId); if (ms.length < 2) return;
     const yes = v => v && v !== "—" ? esc(v) : "—";
     const rows = [["Precio del equipo (con IVA)", m => m.desde ? "Desde " + conIva(m.desde) : "Consultar"], ["Potencia", m => esc(m.potencias) + " kW"], ["Red", m => esc(m.fases)], ["Tomas", m => esc(m.tomas)], ["Salida", m => esc(m.salida)], ["Conectividad", m => esc(m.conectividad)],
-      ["Balanceo dinámico", m => yes(m.detalle["Balanceo dinámico"])], ["Carga solar", m => yes(m.detalle["Integración solar"])], ["OCPP", m => yes(m.detalle["OCPP"])], ["RFID", m => yes(m.detalle["RFID"])], ["Contador MID", m => yes(m.detalle["Contador MID"])], ["Protecciones", m => yes(m.detalle["Protecciones integradas"])], ["Versiones", m => m.versiones.length]];
+      ["Balanceo dinámico", m => yes(m.detalle["Balanceo dinámico"])], ["Carga solar", m => yes(m.detalle["Integración solar"])], ["OCPP", m => yes(m.detalle["OCPP"])], ["RFID", m => yes(m.detalle["RFID"])], ["Contador MID", m => yes(m.detalle["Contador MID"])], ["Protecciones", m => yes(m.detalle["Protecciones integradas"])], ["Opciones", m => m.versiones.length]];
     $("#pd-content").innerHTML = `<div class="cmp-view"><div class="eyebrow">Comparar</div><h2 id="pd-title" style="margin:8px 0 16px">${ms.map(m => esc(m.modelo)).join(" · ")}</h2>
       <label class="cmp-only"><input type="checkbox" id="cmp-only"> Mostrar solo lo que cambia</label>
-      <div class="tbl"><table class="cmp-t"><thead><tr><th scope="col"><span class="visually-hidden">Característica</span></th>${ms.map(m => `<th scope="col"><span class="rel-img">${media(m)}</span><small>${esc(m.marca)}</small>${esc(m.modelo)}</th>`).join("")}</tr></thead>
+      <div class="tbl"><table class="cmp-t" style="--n:${ms.length}"><thead><tr><th scope="col"><span class="visually-hidden">Característica</span></th>${ms.map(m => `<th scope="col"><span class="rel-img">${media(m)}</span><small>${esc(m.marca)}</small>${esc(m.modelo)}</th>`).join("")}</tr></thead>
       <tbody>${rows.map(([k, f]) => { const vals = ms.map(m => String(f(m))); const same = vals.every(v => v === vals[0]); return `<tr class="${same ? "same" : "diff"}"><th scope="row">${k}</th>${vals.map(v => `<td>${v}</td>`).join("")}</tr>`; }).join("")}
       <tr><th scope="row"></th>${ms.map(m => `<td><button class="btn btn-primary btn-sm" type="button" data-cmp-quote="${esc(m.id)}">Pedir precio</button></td>`).join("")}</tr></tbody></table></div>
       <a class="pd-call" href="tel:+34671445832"><span>¿No lo tienes claro?</span><b>Llama al 671 44 58 32 y te aconsejamos</b></a></div>`;
     const only = $("#cmp-only"); if (only) only.onchange = () => $(".cmp-t").classList.toggle("only-diff", only.checked);
+    if (only && matchMedia("(max-width:640px)").matches) { only.checked = true; $(".cmp-t").classList.add("only-diff"); }
     $("#pd-content").querySelectorAll("[data-cmp-quote]").forEach(b => b.onclick = () => { const m = byId(b.dataset.cmpQuote); cur = { m }; toForm("instalacion", m, null); });
     if (!dlg().open) dlg().showModal();
   }
@@ -370,11 +443,11 @@
   /* ---------- Inicio ---------- */
   document.addEventListener("DOMContentLoaded", () => {
     if (!$("#grid")) return;
-    buildFilters(); render();
-    // Enlaces directos: catalogo.html#uso-domestico (filtro) o catalogo.html#p-CIR-01 (ficha)
+    buildFilters(); buildUsoChips(); render();
+    // Enlaces directos: catalogo.html#uso-1, #uso-2, #uso-exterior, #uso-accesorio, #uso-casa, #uso-empresa (filtro) o #p-CIR-01 (ficha)
     const fromHash = () => {
       const h = decodeURIComponent(location.hash.slice(1));
-      if (h.startsWith("uso-")) window.EVX_setUso(h.slice(4));
+      if (h.startsWith("uso-")) fromUsoHash(h.slice(4));
       else if (h.startsWith("p-") && byId(h.slice(2))) openProduct(h.slice(2));
     };
     fromHash(); addEventListener("hashchange", fromHash);
@@ -382,7 +455,8 @@
       const c = e.target.closest("[data-cmp]"); if (!c) return;
       c.checked ? cmp.add(c.dataset.cmp) : cmp.delete(c.dataset.cmp); syncCmp();
     });
-    const bar = $("#cmp-bar");
+    const bar = $("#cmp-bar"), form = document.getElementById("contacto");
+    if (form && "IntersectionObserver" in window) new IntersectionObserver(es => es.forEach(e => document.body.classList.toggle("at-form", e.isIntersecting)), { rootMargin: "0px 0px -30% 0px" }).observe(form);
     if (bar) bar.addEventListener("click", e => {
       const u = e.target.closest("[data-uncmp]"); if (u) { cmp.delete(u.dataset.uncmp); syncCmp(); }
       if (e.target.closest("#cmp-go")) openCompare();

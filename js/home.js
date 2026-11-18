@@ -1,72 +1,101 @@
-/* Home: aparición al hacer scroll, contadores y cargadores destacados */
+/* Portada y páginas de servicio: precios «desde» del catálogo, barra de marcas, atajo de mantenimiento y destacados */
 (function () {
   const $ = id => document.getElementById(id);
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // Precios con IVA incluido (21 %)
-  const eurIva = v => { const n = Math.round(v * 121) / 100, d = Math.abs(n % 1) > 0.004 ? 2 : 0, [i, c] = n.toFixed(d).split("."); return i.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + (c ? "," + c : "") + "\u00a0€"; };
+  const D = window.EVX_CATALOGO;
+  // Los datos del catálogo están sin IVA; el precio principal se muestra con IVA (21 %)
+  const eur = v => { const n = Math.round(v * 100) / 100, d = Math.abs(n % 1) > 0.004 ? 2 : 0, [i, c] = n.toFixed(d).split("."); return i.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + (c ? "," + c : "") + " €"; };
+  const eurIva = v => eur(Math.round(v * 121) / 100);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const img = f => (window.EVX_IMG && window.EVX_IMG[f]) || `img/productos/${f}`;
+  const model = id => D && D.modelos.find(m => m.id === id);
 
-  /* ---------- Escaparate del hero: precios y número de cargadores desde el catálogo ---------- */
-  (function () {
-    const D = window.EVX_CATALOGO; if (!D) return;
-    document.querySelectorAll(".sc-item[data-id]").forEach(a => {
-      const m = D.modelos.find(x => x.id === a.dataset.id), em = a.querySelector("[data-price]");
-      if (m && em) em.innerHTML = m.desde ? '<span class="eq">Equipo </span>desde ' + eurIva(m.desde) + ' <span class="pl">IVA incl.</span>' : "Precio a consultar";
+  /* ---------- Precios «desde» por uso, calculados del catálogo (mismas reglas que el filtro Uso) ---------- */
+  if (D) {
+    const isAcc = m => m.tags.includes("accesorio"), isExt = m => m.tags.includes("exterior");
+    const tomas = m => { const s = new Set(); [m.tomas, ...m.versiones.map(v => v.tomas)].forEach(t => (String(t || "").match(/\d+/g) || []).forEach(n => s.add(n))); return s; };
+    const inUso = (m, u) => u === "min" ? !isAcc(m) : u === "exterior" ? isExt(m) : u === "accesorio" ? isAcc(m) : !isAcc(m) && !isExt(m) && tomas(m).has(u);
+    document.querySelectorAll("[data-price]").forEach(el => {
+      const u = el.dataset.price.replace(/^uso:/, "");
+      const ps = D.modelos.filter(m => inUso(m, u) && m.desde).map(m => m.desde);
+      if (ps.length) el.textContent = "desde " + eurIva(Math.min(...ps));
     });
-    const n = D.modelos.filter(m => !m.tags.includes("accesorio")).length, c = document.querySelector("[data-count-ch]");
-    if (c && n) c.textContent = `Ver los ${n} cargadores`;
-  })();
-
-  /* ---------- Aparición suave al hacer scroll (el estado en reposo ya es visible) ---------- */
-  const els = [...document.querySelectorAll(".rv")];
-  if ("IntersectionObserver" in window && !reduce) {
-    const vh = innerHeight;
-    els.forEach(el => { if (el.getBoundingClientRect().top > vh * 0.95) el.classList.add("pre"); });
-    const io = new IntersectionObserver(es => es.forEach(e => {
-      if (e.isIntersecting) { e.target.classList.remove("pre"); io.unobserve(e.target); }
-    }), { rootMargin: "0px 0px -8% 0px" });
-    els.forEach(el => io.observe(el));
   }
 
-  /* ---------- Línea de tiempo y contadores ---------- */
-  const tl = $("tl");
-  const once = (el, fn) => {
-    if (!el) return;
-    if (!("IntersectionObserver" in window) || reduce) return fn();
-    const o = new IntersectionObserver(es => { if (es[0].isIntersecting) { fn(); o.disconnect(); } }, { threshold: .35 });
-    o.observe(el);
-  };
-  once(tl, () => tl.classList.add("in"));
-  document.querySelectorAll("[data-count]").forEach(el => {
-    const to = +el.dataset.count;
-    once(el, () => {
-      if (reduce) return;
-      const t0 = performance.now(), d = 1200;
-      const step = t => { const k = Math.min(1, (t - t0) / d); el.textContent = "+" + Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); };
-      requestAnimationFrame(step);
+  /* ---------- Barra de marcas: 6 marcas. El logo de Simon o Schneider Electric solo se pide cuando
+     su marca tiene modelos en el catálogo y está marcado como subido en config.js (logos) ---------- */
+  const BRANDS = [
+    { n: "Circutor", f: "circutor-logo.png", w: 452, h: 111, c: "circutor" },
+    { n: "Wallbox", f: "wallbox-logo.png", w: 223, h: 52, c: "wallbox" },
+    { n: "Orbis", f: "orbis-logo.png", w: 222, h: 70, c: "orbis" },
+    { n: "V2C", f: "v2c-logo.png", w: 400, h: 173 },
+    { n: "Simon", f: "simon-logo.png", w: 365, h: 120, c: "simon", opt: "simon" },
+    { n: "Schneider Electric", f: "schneider-logo.png", w: 406, h: 120, c: "schneider", opt: "schneider" }
+  ];
+  const tracks = document.querySelectorAll("[data-brands]");
+  if (tracks.length) {
+    const hasModels = n => D && D.modelos.some(m => m.marca === n);
+    const li = (b, hidden) => `<li${hidden ? ' aria-hidden="true"' : ""}><img src="img/marcas/${b.f}" alt="${hidden ? "" : esc(b.n)}"${b.w ? ` width="${b.w}" height="${b.h}"` : ""}${b.c ? ` class="${b.c}"` : ""} loading="lazy"></li>`;
+    const probe = b => new Promise(ok => { const i = new Image(); i.onload = () => { b.w = i.naturalWidth; b.h = i.naturalHeight; ok(b); }; i.onerror = () => ok(null); i.src = "img/marcas/" + b.f; });
+    const fixed = BRANDS.filter(b => !b.opt);
+    const paint = list => tracks.forEach(t => {
+      // Un juego visible y tres copias ocultas para que el bucle no tenga huecos
+      t.innerHTML = list.map(b => li(b)).join("") + [1, 2, 3].map(() => list.map(b => li(b, true)).join("")).join("");
+      t.classList.add("run");
     });
-  });
+    paint(fixed);
+    const L = (window.EVX_CONFIG && window.EVX_CONFIG.logos) || {};
+    const opt = BRANDS.filter(b => b.opt && L[b.opt] && hasModels(b.n));
+    if (opt.length) Promise.all(opt.map(probe)).then(r => { const ok = r.filter(Boolean); if (ok.length) paint(fixed.concat(ok)); });
+  }
+
+  /* ---------- Catálogo en la portada: carril de cargadores con precio ---------- */
+  const rail = $("rail");
+  if (rail && D) {
+    const isAcc = m => m.tags.includes("accesorio"), isExt = m => m.tags.includes("exterior");
+    const tomas = m => { const s = new Set(); [m.tomas, ...m.versiones.map(v => v.tomas)].forEach(t => (String(t || "").match(/\d+/g) || []).forEach(n => s.add(n))); return [...s].sort(); };
+    const tipo = m => isExt(m) ? "Torre de exterior" : (t => t.length > 1 ? t.join(" o ") + " tomas" : t[0] === "1" ? "1 toma" : t[0] + " tomas")(tomas(m));
+    const ms = D.modelos.filter(m => !isAcc(m) && m.imagen);
+    rail.innerHTML = ms.map(m => `<li><a class="pcard" href="catalogo.html#p-${esc(m.id)}">
+      <span class="ph"><img src="${img(m.imagen)}" alt="" loading="lazy" width="500" height="500"></span>
+      <small>${esc(m.marca)} · ${esc(tipo(m))}</small><b>${esc(m.modelo)}</b><span class="kw">${esc(m.potencias)} kW</span>
+      <span class="pr">${m.desde ? `<strong>${m.versiones.length > 1 ? "desde " : ""}${eurIva(m.desde)}</strong><small>IVA incluido · ${eur(m.desde)} sin IVA · instalación aparte</small>` : `<strong>Consultar precio</strong><small>Te lo damos en el presupuesto</small>`}</span></a></li>`).join("");
+    const marcas = new Set(ms.map(m => m.marca)).size, cnt = document.querySelector("[data-rail-count]");
+    if (cnt) cnt.textContent = `${ms.length} cargadores de ${marcas} marcas, con IVA. Toca uno para ver opciones y ficha.`;
+    const btns = document.querySelectorAll("[data-rail]");
+    const step = () => { const li = rail.querySelector("li"); return li ? li.getBoundingClientRect().width + 16 : 300; };
+    const upd = () => { const max = rail.scrollWidth - rail.clientWidth - 2; btns.forEach(b => b.disabled = +b.dataset.rail < 0 ? rail.scrollLeft <= 2 : rail.scrollLeft >= max); };
+    btns.forEach(b => b.addEventListener("click", () => rail.scrollBy({ left: +b.dataset.rail * step() * 2, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })));
+    rail.addEventListener("scroll", upd, { passive: true }); addEventListener("resize", upd); upd();
+  }
+
+  /* ---------- Zona: el municipio cambia cada 2,4 s mientras se ve (quieto si se pide menos movimiento) ---------- */
+  const rot = document.querySelector(".rot");
+  if (rot && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const items = [...rot.children]; let i = 0, t = null;
+    const next = () => { items[i].classList.remove("on"); i = (i + 1) % items.length; items[i].classList.add("on"); };
+    new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting && !t) t = setInterval(next, 2400); if (!e.isIntersecting && t) { clearInterval(t); t = null; } })).observe(rot);
+  }
+
+  /* ---------- Enlaces antiguos de la portada (#casa, #empresa) ---------- */
+  const OLD = { casa: "cargadores", empresa: "empresas", comunidad: "zona" };
+  const fromHash = () => { const t = OLD[location.hash.slice(1)]; const el = t && $(t); if (el) el.scrollIntoView(); };
+  addEventListener("hashchange", fromHash);
+  if (OLD[location.hash.slice(1)]) addEventListener("load", () => setTimeout(fromHash, 60));
 
   /* ---------- Mantenimiento: preselecciona el formulario ---------- */
-  const setMant = () => { const u = document.getElementById("ubicacion"); if (u) u.value = "Mantenimiento o reparación de un cargador"; };
-  const mants = document.querySelectorAll("[data-mant]");
-  mants.forEach(a => a.addEventListener("click", setMant));
-  // Enlace del menú: index.html#mantenimiento lleva al formulario con la opción ya elegida
+  const setMant = () => { const u = $("ubicacion"); if (u) u.value = "Mantenimiento o reparación de un cargador"; };
+  document.querySelectorAll("[data-mant]").forEach(a => a.addEventListener("click", setMant));
   const goMant = () => { if (location.hash !== "#mantenimiento") return; setMant(); const c = $("contacto"); if (c) c.scrollIntoView(); };
   addEventListener("hashchange", goMant);
   addEventListener("load", () => setTimeout(goMant, 150));
 
-  /* ---------- Cargadores destacados ---------- */
-  const box = $("featured"), D = window.EVX_CATALOGO;
+  /* ---------- Cargadores destacados (garaje comunitario) ---------- */
+  const box = $("featured");
   if (box && D) {
     const ids = (box.dataset.ids || "").split(",");
-    box.innerHTML = ids.map(id => D.modelos.find(m => m.id === id)).filter(Boolean).map(m => {
-      const f = m.imagen, src = (window.EVX_IMG && window.EVX_IMG[f]) || `img/productos/${f}`;
-      return `<a class="fcard rv" href="catalogo.html#p-${m.id}">
-        <span class="im">${f ? `<img src="${src}" alt="${m.marca} ${m.modelo}" loading="lazy" width="500" height="500">` : ""}</span>
-        <span class="tx"><span class="br">${m.marca}</span><h3>${m.modelo}</h3>
-        <span class="pr"><span>Equipo desde</span>${m.desde ? `<b>${eurIva(m.desde)} <small>IVA incl.</small></b>` : "<b>Consultar</b>"}</span></span></a>`;
-    }).join("");
-    const n = D.modelos.filter(m => !m.tags.includes("accesorio")).length;
-    const cta = document.querySelector(".feat-cta a"); if (cta) cta.textContent = cta.textContent.replace("{N}", n);
+    box.innerHTML = ids.map(model).filter(Boolean).map(m => `<li><a class="use" href="catalogo.html#p-${m.id}">
+        <span class="ph">${m.imagen ? `<img src="${img(m.imagen)}" alt="" loading="lazy" width="500" height="500">` : ""}</span>
+        <small>${esc(m.marca)}</small><b>${esc(m.modelo)}</b>
+        <span class="row"><span>${m.desde ? `desde ${eurIva(m.desde)}` : "Consultar"}</span><span class="go" aria-hidden="true"><svg width="16" height="16"><use href="#i-arrow"/></svg></span></span></a></li>`).join("");
   }
 })();

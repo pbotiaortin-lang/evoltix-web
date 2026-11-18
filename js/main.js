@@ -60,12 +60,14 @@
       const a = document.createElement("a");
       a.className = "wa"; a.href = "https://wa.me/" + C.whatsapp + "?text=" + encodeURIComponent("Hola, quiero información sobre un cargador para coche eléctrico.");
       a.target = "_blank"; a.rel = "noopener"; a.setAttribute("aria-label", "Escríbenos por WhatsApp");
-      a.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.6 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5.1-4.5-.1-.2-1.2-1.6-1.2-3.1s.8-2.2 1-2.5c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l2 .9c.3.1.5.2.5.3.1.2.1.8-.1 1.4Z"/></svg>';
-      document.body.appendChild(a);
+      a.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.6 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5.1-4.5-.1-.2-1.2-1.6-1.2-3.1s.8-2.2 1-2.5c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l2 .9c.3.1.5.2.5.3.1.2.1.8-.1 1.4Z"/></svg>';
+      // En escritorio, WhatsApp va en la cabecera junto al teléfono (no flota encima del contenido)
+      const head = document.querySelector(".head-cta .cta-long");
+      if (head) { a.className = "head-wa"; head.parentNode.insertBefore(a, head); }
       // En móvil, WhatsApp va dentro de la barra fija de contacto (no flota encima del contenido)
       const bar = document.querySelector(".mbar");
       if (bar) {
-        const b = a.cloneNode(true); b.className = "btn wa-bar"; b.querySelector("svg").setAttribute("width", "24"); b.querySelector("svg").setAttribute("height", "24");
+        const b = a.cloneNode(true); b.className = "btn wa-bar";
         bar.insertBefore(b, bar.lastElementChild); document.body.classList.add("has-mbar");
       }
     }
